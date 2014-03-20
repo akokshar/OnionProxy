@@ -1,0 +1,579 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		34032C4D18AF7296001FF603 /* OPAuthorityServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C4C18AF7296001FF603 /* OPAuthorityServer.m */; };
+		34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34032C5018AF8CDF001FF603 /* Security.framework */; };
+		34032C5818B0C30C001FF603 /* OPConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C5718B0C30C001FF603 /* OPConfig.m */; };
+		341C443618A621E4002018E1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 341C443518A621E4002018E1 /* Cocoa.framework */; };
+		341C444018A621E4002018E1 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 341C443E18A621E4002018E1 /* InfoPlist.strings */; };
+		341C444218A621E4002018E1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 341C444118A621E4002018E1 /* main.m */; };
+		341C444618A621E4002018E1 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 341C444418A621E4002018E1 /* Credits.rtf */; };
+		341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 341C444818A621E4002018E1 /* OPAppDelegate.m */; };
+		341C444C18A621E4002018E1 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341C444A18A621E4002018E1 /* MainMenu.xib */; };
+		341C444E18A621E4002018E1 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 341C444D18A621E4002018E1 /* Images.xcassets */; };
+		341C445518A621E4002018E1 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 341C445418A621E4002018E1 /* XCTest.framework */; };
+		341C445618A621E4002018E1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 341C443518A621E4002018E1 /* Cocoa.framework */; };
+		341C445E18A621E4002018E1 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 341C445C18A621E4002018E1 /* InfoPlist.strings */; };
+		341C446018A621E4002018E1 /* OnionProxyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 341C445F18A621E4002018E1 /* OnionProxyTests.m */; };
+		341C447418A6355D002018E1 /* OPConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = 341C447318A6355D002018E1 /* OPConfig.plist */; };
+		34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3918C24ABE00C75B92 /* OPConsensus.m */; };
+		34224B3D18C3C04300C75B92 /* OPObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3C18C3C04300C75B92 /* OPObject.m */; };
+		3450744F18C921C600868069 /* OPCircuit.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPCircuit.m */; };
+		34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 34690C9118D0D38800E32D84 /* OPResourceDownloader.m */; };
+		34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E49E7918B9235200759502 /* OPRSAPublicKey.m */; };
+		34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7D18B9347F00759502 /* libcrypto.dylib */; };
+		34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7F18B9EB4500759502 /* libz.dylib */; };
+		34E7E00F18CD96F800599860 /* OPJobDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E7E00E18CD96F800599860 /* OPJobDispatcher.m */; };
+		34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48F218A6433A0027B524 /* OPTorNetwork.m */; };
+		34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48F718A7A9310027B524 /* OPTorNode.m */; };
+		34FD48FB18A9447F0027B524 /* OPAuthority.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48FA18A9447F0027B524 /* OPAuthority.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		341C445718A621E4002018E1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 341C442A18A621E4002018E1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 341C443118A621E4002018E1;
+			remoteInfo = OnionProxy;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		34032C4B18AF7296001FF603 /* OPAuthorityServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPAuthorityServer.h; sourceTree = "<group>"; };
+		34032C4C18AF7296001FF603 /* OPAuthorityServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPAuthorityServer.m; sourceTree = "<group>"; };
+		34032C4E18AF8CC4001FF603 /* SecurityFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SecurityFoundation.framework; path = System/Library/Frameworks/SecurityFoundation.framework; sourceTree = SDKROOT; };
+		34032C5018AF8CDF001FF603 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		34032C5618B0C30C001FF603 /* OPConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPConfig.h; sourceTree = "<group>"; };
+		34032C5718B0C30C001FF603 /* OPConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConfig.m; sourceTree = "<group>"; };
+		341C443218A621E4002018E1 /* OnionProxy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OnionProxy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		341C443518A621E4002018E1 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		341C443818A621E4002018E1 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		341C443918A621E4002018E1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		341C443A18A621E4002018E1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		341C443D18A621E4002018E1 /* OnionProxy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "OnionProxy-Info.plist"; sourceTree = "<group>"; };
+		341C443F18A621E4002018E1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		341C444118A621E4002018E1 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		341C444318A621E4002018E1 /* OnionProxy-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OnionProxy-Prefix.pch"; sourceTree = "<group>"; };
+		341C444518A621E4002018E1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
+		341C444718A621E4002018E1 /* OPAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = OPAppDelegate.h; sourceTree = "<group>"; };
+		341C444818A621E4002018E1 /* OPAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OPAppDelegate.m; sourceTree = "<group>"; };
+		341C444B18A621E4002018E1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		341C444D18A621E4002018E1 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		341C445318A621E4002018E1 /* OnionProxyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OnionProxyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		341C445418A621E4002018E1 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		341C445B18A621E4002018E1 /* OnionProxyTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "OnionProxyTests-Info.plist"; sourceTree = "<group>"; };
+		341C445D18A621E4002018E1 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		341C445F18A621E4002018E1 /* OnionProxyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = OnionProxyTests.m; sourceTree = "<group>"; };
+		341C447318A6355D002018E1 /* OPConfig.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = OPConfig.plist; sourceTree = "<group>"; };
+		34224B3818C24ABE00C75B92 /* OPConsensus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPConsensus.h; sourceTree = "<group>"; };
+		34224B3918C24ABE00C75B92 /* OPConsensus.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConsensus.m; sourceTree = "<group>"; };
+		34224B3B18C3C04300C75B92 /* OPObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPObject.h; sourceTree = "<group>"; };
+		34224B3C18C3C04300C75B92 /* OPObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPObject.m; sourceTree = "<group>"; };
+		3450744D18C921C600868069 /* OPCircuit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCircuit.h; sourceTree = "<group>"; };
+		3450744E18C921C600868069 /* OPCircuit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCircuit.m; sourceTree = "<group>"; };
+		34690C9018D0D38800E32D84 /* OPResourceDownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPResourceDownloader.h; sourceTree = "<group>"; };
+		34690C9118D0D38800E32D84 /* OPResourceDownloader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPResourceDownloader.m; sourceTree = "<group>"; };
+		34E49E7618B9174B00759502 /* libssl.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.dylib; path = usr/lib/libssl.dylib; sourceTree = SDKROOT; };
+		34E49E7818B9235200759502 /* OPRSAPublicKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPRSAPublicKey.h; sourceTree = "<group>"; };
+		34E49E7918B9235200759502 /* OPRSAPublicKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPRSAPublicKey.m; sourceTree = "<group>"; };
+		34E49E7B18B933FD00759502 /* libssl.0.9.8.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.0.9.8.dylib; path = usr/lib/libssl.0.9.8.dylib; sourceTree = SDKROOT; };
+		34E49E7D18B9347F00759502 /* libcrypto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.dylib; path = usr/lib/libcrypto.dylib; sourceTree = SDKROOT; };
+		34E49E7F18B9EB4500759502 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		34E7E00D18CD96F800599860 /* OPJobDispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPJobDispatcher.h; sourceTree = "<group>"; };
+		34E7E00E18CD96F800599860 /* OPJobDispatcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPJobDispatcher.m; sourceTree = "<group>"; };
+		34FD48F118A6433A0027B524 /* OPTorNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNetwork.h; sourceTree = "<group>"; };
+		34FD48F218A6433A0027B524 /* OPTorNetwork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNetwork.m; sourceTree = "<group>"; };
+		34FD48F618A7A9310027B524 /* OPTorNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNode.h; sourceTree = "<group>"; };
+		34FD48F718A7A9310027B524 /* OPTorNode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNode.m; sourceTree = "<group>"; };
+		34FD48F918A9447F0027B524 /* OPAuthority.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPAuthority.h; sourceTree = "<group>"; };
+		34FD48FA18A9447F0027B524 /* OPAuthority.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPAuthority.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		341C442F18A621E4002018E1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */,
+				34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */,
+				34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */,
+				341C443618A621E4002018E1 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		341C445018A621E4002018E1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				341C445618A621E4002018E1 /* Cocoa.framework in Frameworks */,
+				341C445518A621E4002018E1 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		341C442918A621E4002018E1 = {
+			isa = PBXGroup;
+			children = (
+				341C443B18A621E4002018E1 /* OnionProxy */,
+				341C445918A621E4002018E1 /* OnionProxyTests */,
+				341C443418A621E4002018E1 /* Frameworks */,
+				341C443318A621E4002018E1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		341C443318A621E4002018E1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				341C443218A621E4002018E1 /* OnionProxy.app */,
+				341C445318A621E4002018E1 /* OnionProxyTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		341C443418A621E4002018E1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				34E49E7F18B9EB4500759502 /* libz.dylib */,
+				34E49E7D18B9347F00759502 /* libcrypto.dylib */,
+				34E49E7B18B933FD00759502 /* libssl.0.9.8.dylib */,
+				34E49E7618B9174B00759502 /* libssl.dylib */,
+				34032C5018AF8CDF001FF603 /* Security.framework */,
+				34032C4E18AF8CC4001FF603 /* SecurityFoundation.framework */,
+				341C443518A621E4002018E1 /* Cocoa.framework */,
+				341C445418A621E4002018E1 /* XCTest.framework */,
+				341C443718A621E4002018E1 /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		341C443718A621E4002018E1 /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				341C443818A621E4002018E1 /* AppKit.framework */,
+				341C443918A621E4002018E1 /* CoreData.framework */,
+				341C443A18A621E4002018E1 /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		341C443B18A621E4002018E1 /* OnionProxy */ = {
+			isa = PBXGroup;
+			children = (
+				34224B3B18C3C04300C75B92 /* OPObject.h */,
+				34224B3C18C3C04300C75B92 /* OPObject.m */,
+				34032C5618B0C30C001FF603 /* OPConfig.h */,
+				34032C5718B0C30C001FF603 /* OPConfig.m */,
+				34E49E7818B9235200759502 /* OPRSAPublicKey.h */,
+				34E49E7918B9235200759502 /* OPRSAPublicKey.m */,
+				34E7E00D18CD96F800599860 /* OPJobDispatcher.h */,
+				34E7E00E18CD96F800599860 /* OPJobDispatcher.m */,
+				346651C318D8C58100C8F26B /* Directory */,
+				3450744D18C921C600868069 /* OPCircuit.h */,
+				3450744E18C921C600868069 /* OPCircuit.m */,
+				34FD48F118A6433A0027B524 /* OPTorNetwork.h */,
+				34FD48F218A6433A0027B524 /* OPTorNetwork.m */,
+				341C444718A621E4002018E1 /* OPAppDelegate.h */,
+				341C444818A621E4002018E1 /* OPAppDelegate.m */,
+				341C447318A6355D002018E1 /* OPConfig.plist */,
+				341C444A18A621E4002018E1 /* MainMenu.xib */,
+				341C444D18A621E4002018E1 /* Images.xcassets */,
+				341C443C18A621E4002018E1 /* Supporting Files */,
+			);
+			path = OnionProxy;
+			sourceTree = "<group>";
+		};
+		341C443C18A621E4002018E1 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				341C443D18A621E4002018E1 /* OnionProxy-Info.plist */,
+				341C443E18A621E4002018E1 /* InfoPlist.strings */,
+				341C444118A621E4002018E1 /* main.m */,
+				341C444318A621E4002018E1 /* OnionProxy-Prefix.pch */,
+				341C444418A621E4002018E1 /* Credits.rtf */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		341C445918A621E4002018E1 /* OnionProxyTests */ = {
+			isa = PBXGroup;
+			children = (
+				341C445F18A621E4002018E1 /* OnionProxyTests.m */,
+				341C445A18A621E4002018E1 /* Supporting Files */,
+			);
+			path = OnionProxyTests;
+			sourceTree = "<group>";
+		};
+		341C445A18A621E4002018E1 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				341C445B18A621E4002018E1 /* OnionProxyTests-Info.plist */,
+				341C445C18A621E4002018E1 /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		346651C318D8C58100C8F26B /* Directory */ = {
+			isa = PBXGroup;
+			children = (
+				34690C9018D0D38800E32D84 /* OPResourceDownloader.h */,
+				34690C9118D0D38800E32D84 /* OPResourceDownloader.m */,
+				34032C4B18AF7296001FF603 /* OPAuthorityServer.h */,
+				34032C4C18AF7296001FF603 /* OPAuthorityServer.m */,
+				34FD48F918A9447F0027B524 /* OPAuthority.h */,
+				34FD48FA18A9447F0027B524 /* OPAuthority.m */,
+				34FD48F618A7A9310027B524 /* OPTorNode.h */,
+				34FD48F718A7A9310027B524 /* OPTorNode.m */,
+				34224B3818C24ABE00C75B92 /* OPConsensus.h */,
+				34224B3918C24ABE00C75B92 /* OPConsensus.m */,
+			);
+			name = Directory;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		341C443118A621E4002018E1 /* OnionProxy */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 341C446318A621E4002018E1 /* Build configuration list for PBXNativeTarget "OnionProxy" */;
+			buildPhases = (
+				341C442E18A621E4002018E1 /* Sources */,
+				341C442F18A621E4002018E1 /* Frameworks */,
+				341C443018A621E4002018E1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OnionProxy;
+			productName = OnionProxy;
+			productReference = 341C443218A621E4002018E1 /* OnionProxy.app */;
+			productType = "com.apple.product-type.application";
+		};
+		341C445218A621E4002018E1 /* OnionProxyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 341C446618A621E4002018E1 /* Build configuration list for PBXNativeTarget "OnionProxyTests" */;
+			buildPhases = (
+				341C444F18A621E4002018E1 /* Sources */,
+				341C445018A621E4002018E1 /* Frameworks */,
+				341C445118A621E4002018E1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				341C445818A621E4002018E1 /* PBXTargetDependency */,
+			);
+			name = OnionProxyTests;
+			productName = OnionProxyTests;
+			productReference = 341C445318A621E4002018E1 /* OnionProxyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		341C442A18A621E4002018E1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				CLASSPREFIX = OP;
+				LastUpgradeCheck = 0500;
+				TargetAttributes = {
+					341C445218A621E4002018E1 = {
+						TestTargetID = 341C443118A621E4002018E1;
+					};
+				};
+			};
+			buildConfigurationList = 341C442D18A621E4002018E1 /* Build configuration list for PBXProject "OnionProxy" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 341C442918A621E4002018E1;
+			productRefGroup = 341C443318A621E4002018E1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				341C443118A621E4002018E1 /* OnionProxy */,
+				341C445218A621E4002018E1 /* OnionProxyTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		341C443018A621E4002018E1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				341C447418A6355D002018E1 /* OPConfig.plist in Resources */,
+				341C444018A621E4002018E1 /* InfoPlist.strings in Resources */,
+				341C444E18A621E4002018E1 /* Images.xcassets in Resources */,
+				341C444618A621E4002018E1 /* Credits.rtf in Resources */,
+				341C444C18A621E4002018E1 /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		341C445118A621E4002018E1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				341C445E18A621E4002018E1 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		341C442E18A621E4002018E1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */,
+				34032C5818B0C30C001FF603 /* OPConfig.m in Sources */,
+				341C444218A621E4002018E1 /* main.m in Sources */,
+				3450744F18C921C600868069 /* OPCircuit.m in Sources */,
+				34E7E00F18CD96F800599860 /* OPJobDispatcher.m in Sources */,
+				34032C4D18AF7296001FF603 /* OPAuthorityServer.m in Sources */,
+				34FD48FB18A9447F0027B524 /* OPAuthority.m in Sources */,
+				34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */,
+				34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */,
+				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
+				34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */,
+				34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */,
+				34224B3D18C3C04300C75B92 /* OPObject.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		341C444F18A621E4002018E1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				341C446018A621E4002018E1 /* OnionProxyTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		341C445818A621E4002018E1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 341C443118A621E4002018E1 /* OnionProxy */;
+			targetProxy = 341C445718A621E4002018E1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		341C443E18A621E4002018E1 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				341C443F18A621E4002018E1 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		341C444418A621E4002018E1 /* Credits.rtf */ = {
+			isa = PBXVariantGroup;
+			children = (
+				341C444518A621E4002018E1 /* en */,
+			);
+			name = Credits.rtf;
+			sourceTree = "<group>";
+		};
+		341C444A18A621E4002018E1 /* MainMenu.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				341C444B18A621E4002018E1 /* Base */,
+			);
+			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+		341C445C18A621E4002018E1 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				341C445D18A621E4002018E1 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		341C446118A621E4002018E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		341C446218A621E4002018E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		341C446418A621E4002018E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
+				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		341C446518A621E4002018E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
+				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		341C446718A621E4002018E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/OnionProxy.app/Contents/MacOS/OnionProxy";
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = "OnionProxyTests/OnionProxyTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Debug;
+		};
+		341C446818A621E4002018E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/OnionProxy.app/Contents/MacOS/OnionProxy";
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+					"$(inherited)",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
+				INFOPLIST_FILE = "OnionProxyTests/OnionProxyTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = xctest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		341C442D18A621E4002018E1 /* Build configuration list for PBXProject "OnionProxy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				341C446118A621E4002018E1 /* Debug */,
+				341C446218A621E4002018E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		341C446318A621E4002018E1 /* Build configuration list for PBXNativeTarget "OnionProxy" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				341C446418A621E4002018E1 /* Debug */,
+				341C446518A621E4002018E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		341C446618A621E4002018E1 /* Build configuration list for PBXNativeTarget "OnionProxyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				341C446718A621E4002018E1 /* Debug */,
+				341C446818A621E4002018E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 341C442A18A621E4002018E1 /* Project object */;
+}
