@@ -24,15 +24,21 @@
 		341C447418A6355D002018E1 /* OPConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = 341C447318A6355D002018E1 /* OPConfig.plist */; };
 		34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3918C24ABE00C75B92 /* OPConsensus.m */; };
 		34224B3D18C3C04300C75B92 /* OPObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3C18C3C04300C75B92 /* OPObject.m */; };
-		3450744F18C921C600868069 /* OPCircuit.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPCircuit.m */; };
+		344B294C18DE18B900C463AA /* OPCircuit.m in Sources */ = {isa = PBXBuildFile; fileRef = 344B294B18DE18B900C463AA /* OPCircuit.m */; };
+		3450744F18C921C600868069 /* OPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPConnection.m */; };
+		34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */; };
+		34511EBA18E7113800CE02E5 /* libtommath.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34DF24D218E60C1700B705D6 /* libtommath.a */; };
+		34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EBC18EF285300CE02E5 /* OPCSP.m */; };
 		34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 34690C9118D0D38800E32D84 /* OPResourceDownloader.m */; };
 		34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E49E7918B9235200759502 /* OPRSAPublicKey.m */; };
 		34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7D18B9347F00759502 /* libcrypto.dylib */; };
 		34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7F18B9EB4500759502 /* libz.dylib */; };
 		34E7E00F18CD96F800599860 /* OPJobDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E7E00E18CD96F800599860 /* OPJobDispatcher.m */; };
+		34EE82EE18F332EF00992506 /* OPEllipticCurveDH.m in Sources */ = {isa = PBXBuildFile; fileRef = 34EE82ED18F332EF00992506 /* OPEllipticCurveDH.m */; };
 		34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48F218A6433A0027B524 /* OPTorNetwork.m */; };
 		34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48F718A7A9310027B524 /* OPTorNode.m */; };
 		34FD48FB18A9447F0027B524 /* OPAuthority.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FD48FA18A9447F0027B524 /* OPAuthority.m */; };
+		34FE94B618E327FA0037CFCF /* OPSimmetricKey.m in Sources */ = {isa = PBXBuildFile; fileRef = 34FE94B518E327FA0037CFCF /* OPSimmetricKey.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,10 +82,18 @@
 		34224B3918C24ABE00C75B92 /* OPConsensus.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConsensus.m; sourceTree = "<group>"; };
 		34224B3B18C3C04300C75B92 /* OPObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPObject.h; sourceTree = "<group>"; };
 		34224B3C18C3C04300C75B92 /* OPObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPObject.m; sourceTree = "<group>"; };
-		3450744D18C921C600868069 /* OPCircuit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCircuit.h; sourceTree = "<group>"; };
-		3450744E18C921C600868069 /* OPCircuit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCircuit.m; sourceTree = "<group>"; };
+		344B294A18DE18B900C463AA /* OPCircuit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCircuit.h; sourceTree = "<group>"; };
+		344B294B18DE18B900C463AA /* OPCircuit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCircuit.m; sourceTree = "<group>"; };
+		3450744D18C921C600868069 /* OPConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPConnection.h; sourceTree = "<group>"; };
+		3450744E18C921C600868069 /* OPConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConnection.m; sourceTree = "<group>"; };
+		34511EB718E70AEB00CE02E5 /* OPDiffieHellman.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPDiffieHellman.h; sourceTree = "<group>"; };
+		34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDiffieHellman.m; sourceTree = "<group>"; };
+		34511EBB18EF285300CE02E5 /* OPCSP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCSP.h; sourceTree = "<group>"; };
+		34511EBC18EF285300CE02E5 /* OPCSP.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCSP.m; sourceTree = "<group>"; };
 		34690C9018D0D38800E32D84 /* OPResourceDownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPResourceDownloader.h; sourceTree = "<group>"; };
 		34690C9118D0D38800E32D84 /* OPResourceDownloader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPResourceDownloader.m; sourceTree = "<group>"; };
+		34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = OnionProxy.entitlements; sourceTree = "<group>"; };
+		34DF24D218E60C1700B705D6 /* libtommath.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libtommath.a; path = "libtommath-0.42.0/libtommath.a"; sourceTree = "<group>"; };
 		34E49E7618B9174B00759502 /* libssl.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.dylib; path = usr/lib/libssl.dylib; sourceTree = SDKROOT; };
 		34E49E7818B9235200759502 /* OPRSAPublicKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPRSAPublicKey.h; sourceTree = "<group>"; };
 		34E49E7918B9235200759502 /* OPRSAPublicKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPRSAPublicKey.m; sourceTree = "<group>"; };
@@ -88,12 +102,16 @@
 		34E49E7F18B9EB4500759502 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		34E7E00D18CD96F800599860 /* OPJobDispatcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPJobDispatcher.h; sourceTree = "<group>"; };
 		34E7E00E18CD96F800599860 /* OPJobDispatcher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPJobDispatcher.m; sourceTree = "<group>"; };
+		34EE82EC18F332EF00992506 /* OPEllipticCurveDH.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPEllipticCurveDH.h; sourceTree = "<group>"; };
+		34EE82ED18F332EF00992506 /* OPEllipticCurveDH.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPEllipticCurveDH.m; sourceTree = "<group>"; };
 		34FD48F118A6433A0027B524 /* OPTorNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNetwork.h; sourceTree = "<group>"; };
 		34FD48F218A6433A0027B524 /* OPTorNetwork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNetwork.m; sourceTree = "<group>"; };
 		34FD48F618A7A9310027B524 /* OPTorNode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNode.h; sourceTree = "<group>"; };
 		34FD48F718A7A9310027B524 /* OPTorNode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNode.m; sourceTree = "<group>"; };
 		34FD48F918A9447F0027B524 /* OPAuthority.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPAuthority.h; sourceTree = "<group>"; };
 		34FD48FA18A9447F0027B524 /* OPAuthority.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPAuthority.m; sourceTree = "<group>"; };
+		34FE94B418E327FA0037CFCF /* OPSimmetricKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPSimmetricKey.h; sourceTree = "<group>"; };
+		34FE94B518E327FA0037CFCF /* OPSimmetricKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPSimmetricKey.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +119,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34511EBA18E7113800CE02E5 /* libtommath.a in Frameworks */,
 				34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */,
 				34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */,
 				34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */,
@@ -142,6 +161,7 @@
 		341C443418A621E4002018E1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				34DF24D218E60C1700B705D6 /* libtommath.a */,
 				34E49E7F18B9EB4500759502 /* libz.dylib */,
 				34E49E7D18B9347F00759502 /* libcrypto.dylib */,
 				34E49E7B18B933FD00759502 /* libssl.0.9.8.dylib */,
@@ -172,19 +192,21 @@
 				34224B3C18C3C04300C75B92 /* OPObject.m */,
 				34032C5618B0C30C001FF603 /* OPConfig.h */,
 				34032C5718B0C30C001FF603 /* OPConfig.m */,
-				34E49E7818B9235200759502 /* OPRSAPublicKey.h */,
-				34E49E7918B9235200759502 /* OPRSAPublicKey.m */,
 				34E7E00D18CD96F800599860 /* OPJobDispatcher.h */,
 				34E7E00E18CD96F800599860 /* OPJobDispatcher.m */,
+				34EE82EB18F0691200992506 /* Security */,
 				346651C318D8C58100C8F26B /* Directory */,
-				3450744D18C921C600868069 /* OPCircuit.h */,
-				3450744E18C921C600868069 /* OPCircuit.m */,
+				3450744D18C921C600868069 /* OPConnection.h */,
+				3450744E18C921C600868069 /* OPConnection.m */,
+				344B294A18DE18B900C463AA /* OPCircuit.h */,
+				344B294B18DE18B900C463AA /* OPCircuit.m */,
 				34FD48F118A6433A0027B524 /* OPTorNetwork.h */,
 				34FD48F218A6433A0027B524 /* OPTorNetwork.m */,
 				341C444718A621E4002018E1 /* OPAppDelegate.h */,
 				341C444818A621E4002018E1 /* OPAppDelegate.m */,
 				341C447318A6355D002018E1 /* OPConfig.plist */,
 				341C444A18A621E4002018E1 /* MainMenu.xib */,
+				34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */,
 				341C444D18A621E4002018E1 /* Images.xcassets */,
 				341C443C18A621E4002018E1 /* Supporting Files */,
 			);
@@ -238,6 +260,23 @@
 			name = Directory;
 			sourceTree = "<group>";
 		};
+		34EE82EB18F0691200992506 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				34E49E7818B9235200759502 /* OPRSAPublicKey.h */,
+				34E49E7918B9235200759502 /* OPRSAPublicKey.m */,
+				34FE94B418E327FA0037CFCF /* OPSimmetricKey.h */,
+				34FE94B518E327FA0037CFCF /* OPSimmetricKey.m */,
+				34511EBB18EF285300CE02E5 /* OPCSP.h */,
+				34511EBC18EF285300CE02E5 /* OPCSP.m */,
+				34511EB718E70AEB00CE02E5 /* OPDiffieHellman.h */,
+				34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */,
+				34EE82EC18F332EF00992506 /* OPEllipticCurveDH.h */,
+				34EE82ED18F332EF00992506 /* OPEllipticCurveDH.m */,
+			);
+			name = Security;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -285,6 +324,13 @@
 				CLASSPREFIX = OP;
 				LastUpgradeCheck = 0500;
 				TargetAttributes = {
+					341C443118A621E4002018E1 = {
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 0;
+							};
+						};
+					};
 					341C445218A621E4002018E1 = {
 						TestTargetID = 341C443118A621E4002018E1;
 					};
@@ -337,16 +383,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34EE82EE18F332EF00992506 /* OPEllipticCurveDH.m in Sources */,
+				344B294C18DE18B900C463AA /* OPCircuit.m in Sources */,
 				34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */,
 				34032C5818B0C30C001FF603 /* OPConfig.m in Sources */,
+				34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */,
 				341C444218A621E4002018E1 /* main.m in Sources */,
-				3450744F18C921C600868069 /* OPCircuit.m in Sources */,
+				3450744F18C921C600868069 /* OPConnection.m in Sources */,
 				34E7E00F18CD96F800599860 /* OPJobDispatcher.m in Sources */,
 				34032C4D18AF7296001FF603 /* OPAuthorityServer.m in Sources */,
 				34FD48FB18A9447F0027B524 /* OPAuthority.m in Sources */,
+				34FE94B618E327FA0037CFCF /* OPSimmetricKey.m in Sources */,
 				34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */,
 				34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */,
 				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
+				34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */,
 				34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */,
 				34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */,
 				34224B3D18C3C04300C75B92 /* OPObject.m in Sources */,
@@ -480,11 +531,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
 				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/libtommath-0.42.0",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/Users/0xffff/Documents/Developer/Xcode/OnionProxy/libtommath-0.42.0";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -494,11 +551,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
 				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/libtommath-0.42.0",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/Users/0xffff/Documents/Developer/Xcode/OnionProxy/libtommath-0.42.0";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

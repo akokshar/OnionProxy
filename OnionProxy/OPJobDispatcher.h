@@ -16,14 +16,15 @@
 
 - (id) initWithMaxJobsCount:(NSUInteger)maxJobsCount;
 
-+ (OPJobDispatcher *) nodesBundle1;
-
 - (void) addJobForTarget:(id)target selector:(SEL)selector object:(id)object;
 - (void) addJobForTarget:(id)target selector:(SEL)selector object:(id)object delayedFor:(NSTimeInterval)seconds;
 - (void) addBarierTarget:(id)target selector:(SEL)selector object:(id)object;
+
 - (void) wait;
 
 - (void) pause;
 - (void) resume;
+
++ (OPJobDispatcher *) disparcher;
 
 @end

@@ -28,11 +28,15 @@
 
 @property (readonly, getter = getRandomV2DirNode) OPTorNode *randomV2DirNode;
 @property (readonly, getter = getRandomExitNode) OPTorNode *randomExitNode;
+@property (readonly, getter = getRandomRouterNode) OPTorNode *randomRouterNode;
 
 @property (assign) IBOutlet NSTextField *tfNodesCount;
 @property (assign) IBOutlet NSTextField *tfDirServersCount;
 @property (assign) IBOutlet NSTextField *tfExitNodesCount;
+@property (assign) IBOutlet NSTextField *tfRoutersCount;
 
 @property (assign) IBOutlet NSTextField *tfCurrentOperation;
+
+- (IBAction)dispatcherResune:(id)sender;
 
 @end

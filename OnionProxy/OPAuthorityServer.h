@@ -14,8 +14,8 @@
     
 }
 
-@property (readonly, getter = getIpAddress) NSString *ipAddress;
-@property (readonly, getter = getDirPort) NSString *dirPort;
+@property (readonly, getter = getIp) NSString *ip;
+@property (readonly, getter = getDirPort) NSUInteger dirPort;
 @property (readonly, getter = getNick) NSString *nick;
 
 -(id) initWithConfigIndex:(NSUInteger)index;

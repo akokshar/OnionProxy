@@ -7,7 +7,7 @@
 //
 
 #import "OPAuthority.h"
-#import "OPJobDispatcher.h"
+//#import "OPJobDispatcher.h"
 #import "OPAuthorityServer.h"
 #import "OPConfig.h"
 
@@ -49,28 +49,39 @@
 
 - (void) addServer:(NSNumber *)configIndex {
     OPAuthorityServer *authorityServer = [[OPAuthorityServer alloc] initWithConfigIndex:[configIndex integerValue]];
+    
     if (authorityServer) {
         @synchronized(self) {
             [authorityServers setObject:authorityServer forKey:[[OPConfig config] getIdentDgstOfServerAtIndex:[configIndex integerValue]]];
         }
         [authorityServer release];
+        [self logMsg:@"Server %@ ready", authorityServer.nick];
     }
-    
 }
 
 - (id) init {
     self = [super init];
     if (self) {
+        [self logMsg:@"INIT AUTHORITIES"];
         OPConfig *config = [OPConfig config];
         authorityServers = [[NSMutableDictionary alloc] initWithCapacity:config.serversCount];
-        OPJobDispatcher *jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:config.serversCount];
+        //OPJobDispatcher *jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:config.serversCount];
+        
+        dispatch_queue_t dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
         
         for (int i = 0; i < config.serversCount; i++) {
-            [jobDispatcher addJobForTarget:self selector:@selector(addServer:) object:[NSNumber numberWithInt:i]];
+            dispatch_async(dispatchQueue, ^{
+                [self addServer:[NSNumber numberWithInt:i]];
+            });
+//            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(addServer:) object:[NSNumber numberWithInt:i]];
         }
         
-        [jobDispatcher wait];
-        [jobDispatcher release];
+        dispatch_barrier_sync(dispatchQueue, ^{ });
+        dispatch_release(dispatchQueue);
+        
+//        [[OPJobDispatcher disparcher] wait];
+        //[jobDispatcher release];
+        [self logMsg:@"AUTHORITIES READY"];
     }
     return self;
 }

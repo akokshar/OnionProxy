@@ -2,17 +2,20 @@
 //  OPCircuit.h
 //  OnionProxy
 //
-//  Created by Koksharov Alexander on 06/03/14.
+//  Created by Koksharov Alexander on 22/03/14.
 //
 //
-
-#import <Foundation/Foundation.h>
 
 #import "OPObject.h"
-#import "OPTorNode.h"
+#import "OPConnection.h"
 
-@interface OPCircuit : OPObject
+@interface OPCircuit : OPObject <OPConnectionDelegate> {
+    
+}
 
-- (id) initWithLayersCount:(NSUInteger)layersCount andDestinationPort:(uint16_t)port;
+@property (readonly, getter = getCircuitID) uint16_t circuitID;
+
+- (id) initWithDestinationPort:(NSUInteger)port;
+- (void) close;
 
 @end

@@ -7,8 +7,20 @@
 //
 
 #import <Foundation/Foundation.h>
-
 #import "OPObject.h"
+#import "OPRSAPublicKey.h"
+
+extern NSString * const nodeFingerprintDataKey;
+extern NSString * const nodeFingerprintStrKey;
+extern NSString * const nodeDescriptorDataKey;
+extern NSString * const nodeDescriptorStrKey;
+extern NSString * const nodeIpStrKey;
+extern NSString * const nodeOrPortStrKey;
+extern NSString * const nodeDirPortStrKey;
+extern NSString * const nodeFlagsStrKey;
+extern NSString * const nodeVersionStrKey;
+extern NSString * const nodeBandwidthStrKey;
+extern NSString * const nodePolicyStrKey;
 
 @interface OPTorNode : OPObject {
     
@@ -29,16 +41,20 @@
 @property (readonly) BOOL isHSDir;
 
 @property (readonly) NSString *ip;
-@property (readonly) NSString *orPort;
-@property (readonly) NSString *dirPort;
+@property (readonly) NSUInteger orPort;
+@property (readonly) NSUInteger dirPort;
 
 @property (readonly) NSDate *lastUpdated;
 
-@property (readonly, getter = getIsHasLastDescriptor) BOOL isHasLastDescriptor;
-- (void) retriveDescriptor;
+//@property (readonly) OPRSAPublicKey *signingKey;
+@property (readonly) OPRSAPublicKey *onionKey;
 
-- (id) initWithFingerprint:(NSData *)fingerprint descriptor:(NSData *)digest ip:(NSString *)ip orPort:(NSString *)orPort dirPort:(NSString *)dirPort flags:(NSString *)flags;
-- (void) updateWithDescriptor:(NSData *)digest ip:(NSString *)ip orPort:(NSString *)orPort dirPort:(NSString *)dirPort flags:(NSString *)flags;
+@property (readonly, getter = getIsHasLastDescriptor) BOOL isHasLastDescriptor;
+- (void) prefetchDescriptor;
+
+- (id) initWithParams:(NSDictionary *)nodeParams;
+- (void) updateWithParams:(NSDictionary *)nodeParams;
+
 - (void) cleanCachedInfo;
 
 @end

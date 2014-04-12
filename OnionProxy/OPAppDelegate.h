@@ -12,6 +12,7 @@
 
 @property (assign) IBOutlet NSWindow *window;
 
-@property (assign) IBOutlet NSTextField *tfConsensusNodesCount;
+- (IBAction)TEST:(id)sender;
+- (IBAction)TEST2:(id)sender;
 
 @end

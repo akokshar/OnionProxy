@@ -9,13 +9,13 @@
 #import "OPJobDispatcher.h"
 #import "OPConfig.h"
 
+NSString * const jobInvocationOperationKey = @"Target";
 NSString * const jobTargetKey = @"Target";
 NSString * const jobSelectorKey = @"Selector";
 NSString * const jobObjectKey = @"Object";
 NSString * const jobIsBarierKey = @"IsBarier";
 
 @interface OPJobDispatcher() {
-    dispatch_group_t dispatchGroup;
     dispatch_queue_t dispatchQueue;
     NSMutableArray *jobs;
 }
@@ -24,7 +24,8 @@ NSString * const jobIsBarierKey = @"IsBarier";
 @property (atomic) NSUInteger jobsCount;
 @property (atomic) BOOL isPaused;
 
-- (void) jobThread:(NSDictionary *)jobParams;
+- (void) addJobWithParams:(NSDictionary *)params;
+- (void) runJobWithParams:(NSDictionary *)params;
 - (void) dispatch;
 
 @end
@@ -32,51 +33,44 @@ NSString * const jobIsBarierKey = @"IsBarier";
 @implementation OPJobDispatcher
 
 - (void) addJobForTarget:(id)target selector:(SEL)selector object:(id)object {
+    NSInvocationOperation *operation = [[NSInvocationOperation alloc] initWithTarget:target selector:selector object:object];
     NSDictionary *jobParamsDict = [NSDictionary dictionaryWithObjectsAndKeys:
-                                       (target == NULL)?[NSNull null]:target, jobTargetKey,
-                                       NSStringFromSelector(selector), jobSelectorKey,
-                                       (object == NULL)?[NSNull null]:object, jobObjectKey,
-                                       [NSNumber numberWithBool:NO], jobIsBarierKey, nil];
-
-    @synchronized(self) {
-        [jobs addObject:jobParamsDict];
-    }
-    
+                                   operation, jobInvocationOperationKey,
+                                   [NSNumber numberWithBool:NO], jobIsBarierKey,
+                                   nil];
+    [operation release];
+    [self addJobWithParams:jobParamsDict];
     [self dispatch];
 }
 
 - (void) addJobForTarget:(id)target selector:(SEL)selector object:(id)object delayedFor:(NSTimeInterval)seconds {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(seconds * NSEC_PER_SEC)), dispatchQueue, ^{
+        //[self logMsg:@"Dispatch delayed job '%@' with object", NSStringFromSelector(selector)];
         [self addJobForTarget:target selector:selector object:object];
     });
-    
-    [self dispatch];
 }
 
 - (void) addBarierTarget:(id)target selector:(SEL)selector object:(id)object {
+    NSInvocationOperation *operation = [[NSInvocationOperation alloc] initWithTarget:target selector:selector object:object];
     NSDictionary *jobParamsDict = [NSDictionary dictionaryWithObjectsAndKeys:
-                                   (target == NULL)?[NSNull null]:target, jobTargetKey,
-                                   NSStringFromSelector(selector), jobSelectorKey,
-                                   (object == NULL)?[NSNull null]:object, jobObjectKey,
+                                   operation, jobInvocationOperationKey,
                                    [NSNumber numberWithBool:YES], jobIsBarierKey, nil];
-    
-    @synchronized(self) {
-        [jobs addObject:jobParamsDict];
-    }
-    
+    [operation release];
+    [self addJobWithParams:jobParamsDict];
     [self dispatch];
 }
 
-- (void) jobThread:(NSDictionary *)jobParamsDict {
-    id target = [jobParamsDict objectForKey:jobTargetKey];
-    SEL method = NSSelectorFromString([jobParamsDict objectForKey:jobSelectorKey]);
-    id object = [jobParamsDict objectForKey:jobObjectKey];
+- (void) addJobWithParams:(NSDictionary *)params {
+    @synchronized(self) {
+        [jobs addObject:params];
+    }
+}
+
+- (void) runJobWithParams:(NSDictionary *)params {
+    NSInvocationOperation *operation = [params objectForKey:jobInvocationOperationKey];
+    [[operation invocation] invoke];
     
-    [target performSelector:method withObject:([object isKindOfClass:[NSNull class]])?NULL:object];
-    
-    [jobParamsDict release];
-    
-    self.jobsCount--;
+    self.jobsCount--;    
     [self dispatch];
 }
 
@@ -85,43 +79,46 @@ NSString * const jobIsBarierKey = @"IsBarier";
         return;
     }
     
-    if (self.jobsCount < self.jobsCountLimit) {
-        NSDictionary *jobParamsDict = NULL;
-        
-        @synchronized(self) {
-            if ([jobs count] > 0) {
-                jobParamsDict = [jobs objectAtIndex:0];
-                [jobParamsDict retain];
-                [jobs removeObjectAtIndex:0];
-            }
+    if (self.jobsCount >= self.jobsCountLimit) {
+        return;
+    }
+    
+    NSDictionary *jobParamsDict = NULL;
+    
+    @synchronized(self) {
+        if ([jobs count] > 0) {
+            jobParamsDict = [jobs objectAtIndex:0];
+            [jobParamsDict retain];
+            [jobs removeObjectAtIndex:0];
         }
+    }
 
-        if (jobParamsDict) {
-            if ([(NSNumber *)[jobParamsDict objectForKey:jobIsBarierKey] boolValue]) {
-                dispatch_barrier_async(dispatchQueue, ^{
-                    self.jobsCount++;
-                    [self jobThread:jobParamsDict];
-                    //[jobParams release];
-                });
-            }
-            else {
-                dispatch_async(dispatchQueue, ^{
-                    self.jobsCount++;
-                    [self jobThread:jobParamsDict];
-                    //[jobParams release];
-                });
-            }
+    if (jobParamsDict) {
+        self.jobsCount++;
+        if ([(NSNumber *)[jobParamsDict objectForKey:jobIsBarierKey] boolValue]) {
+            dispatch_barrier_async(dispatchQueue, ^{
+                [self runJobWithParams:jobParamsDict];
+            });
         }
+        else {
+            dispatch_async(dispatchQueue, ^{
+                [self runJobWithParams:jobParamsDict];
+            });
+        }
+        [jobParamsDict release];
     }
 }
 
 - (void) wait {
-    dispatch_group_wait(dispatchGroup, DISPATCH_TIME_FOREVER);
+    dispatch_barrier_sync(dispatchQueue, ^{
+        
+    });
 }
 
 - (void) pause {
     self.isPaused = YES;
 }
+
 - (void) resume {
     self.isPaused = NO;
     [self dispatch];
@@ -132,10 +129,8 @@ NSString * const jobIsBarierKey = @"IsBarier";
     if (self) {
         [self logMsg:@"INIT JOBDISPATCHER"];
         
-        dispatchGroup = dispatch_group_create();
         dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
-        
-        jobs = [[NSMutableArray alloc] initWithCapacity:32];
+        jobs = [[NSMutableArray alloc] initWithCapacity:10000];
         
         self.jobsCountLimit = maxJobsCount;
         self.jobsCount = 0;
@@ -146,20 +141,28 @@ NSString * const jobIsBarierKey = @"IsBarier";
 
 - (void) dealloc {
     [jobs release];
-    
     dispatch_release(dispatchQueue);
-    dispatch_release(dispatchGroup);
     
     [super dealloc];
 }
 
-+ (OPJobDispatcher *) nodesBundle1 {
-    static OPJobDispatcher *instance;
++ (OPJobDispatcher *) disparcher {
+    static OPJobDispatcher *instance  = NULL;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        instance = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].nodesThreadsCount];
+        instance = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].maxJobsCount];
     });
     return instance;
+    
 }
 
 @end
+
+/*
+ 
+ NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+ [queue setMaxConcurrentOperationCount:10];
+ NSOperation *operation = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(close) object:NULL];
+ [queue addOperation:operation];
+ 
+ */

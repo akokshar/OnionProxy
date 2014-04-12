@@ -8,6 +8,7 @@
 
 #import "OPAuthorityServer.h"
 #import "OPConfig.h"
+#import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
 #import <zlib.h>
@@ -28,21 +29,21 @@
 
 @implementation OPAuthorityServer
 
-@synthesize ipAddress;
+@synthesize ip;
 
-- (NSString *) getIpAddress {
+- (NSString *) getIp {
     return [[OPConfig config] getIpAddrOfServerAtIndex:configIndex];
 }
 
 @synthesize dirPort;
 
-- (NSString *) getDirPort {
+- (NSUInteger) getDirPort {
     return [[OPConfig config] getIpPortOfServerAtIndex:configIndex];
 }
 
 @synthesize nick;
 
-- (NSString *) getNck {
+- (NSString *) getNick {
     return [[OPConfig config] getNickOfServerAtIndex:configIndex];
 }
 
@@ -82,22 +83,14 @@
     }
     
     if (!rawKeysData) {
-        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@:%@%@",
-                                           [config getIpAddrOfServerAtIndex:configIndex],
-                                           [config getIpPortOfServerAtIndex:configIndex],
-                                           config.dirKeyCerificateURL]
-                      ];
-        NSURLRequest *request = [NSURLRequest requestWithURL:url cachePolicy:NSURLCacheStorageNotAllowed timeoutInterval:5];
-        NSHTTPURLResponse *response = NULL;
-        
-        rawKeysData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:NULL];
-        if ([response statusCode] == 200) {
-            [rawKeysData writeToFile:cacheFilePath atomically:NO];
-        }
-        else {
-            [self logMsg:@"Failure while loading '%@'", url];
-            rawKeysData = NULL;
-        }
+        NSString *resourceUrlStr = [NSString stringWithFormat:@"%@%@.z", [config getAuthorityCerificateFpURL], [config getIdentDgstOfServerAtIndex:configIndex]];
+        [OPResourceDownloader downloadFromAuthorityResource:resourceUrlStr to:cacheFilePath timeout:3];
+//        [OPResourceDownloader downloadFromIp:[config getIpAddrOfServerAtIndex:configIndex]
+//                                        port:(unsigned long)[config getIpPortOfServerAtIndex:configIndex]
+//                                    resource:config.dirKeyCerificateURL
+//                                          to:cacheFilePath
+//                                     timeout:5];
+        rawKeysData = [NSData dataWithContentsOfFile:cacheFilePath];
     }
     
     if (!rawKeysData) {
@@ -179,7 +172,7 @@
                 NSData *signedTextDigest = [self sha1DigestOfText:[keysStr substringWithRange:[match rangeAtIndex:1]]];
                 BOOL isVerified = [self.identPublicKey verifyBase64SignatureStr:[keysInfoTmp objectForKey:@"dir-key-certification"] forDataDigest:signedTextDigest];
                 if (isVerified) {
-                    [self logMsg:@"Keys signature verified for '%@'", [config getNickOfServerAtIndex:configIndex]];
+                    //[self logMsg:@"Keys signature verified for '%@'", [config getNickOfServerAtIndex:configIndex]];
                     result = YES;
                 }
                 else {

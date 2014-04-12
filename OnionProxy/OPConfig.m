@@ -33,24 +33,22 @@
     return _params;
 }
 
-@synthesize nodesThreadsCount;
+@synthesize maxJobsCount;
 
-- (NSUInteger) getNodesThreadsCount {
-    NSNumber *r = [self.params objectForKey:@"NodesMaxThreadsCount"];
-    return [r integerValue];
-}
-
-@synthesize consensusThreadsCount;
-
--(NSUInteger) getConsensusThreadsCount {
-    NSNumber *r = [self.params objectForKey:@"ConsensusMaxThreadsCount"];
-    return [r integerValue];   
+-(NSUInteger) getMaxJobsCount {
+    NSNumber *count = [self.params objectForKey:@"MaxJobsCount"];
+    if (count) {
+        return [count integerValue];
+    }
+    return 64;
 }
 
 @synthesize cacheDir;
 
 - (NSString *) getCacheDir {
-    return [self.params objectForKey:@"CacheDir"];
+    @synchronized(self) {
+        return [self.params objectForKey:@"CacheDir"];
+    }
 }
 
 @synthesize servers = _servers;
@@ -65,16 +63,32 @@
     return [self.servers count];
 }
 
-@synthesize dirKeyCerificateURL;
+@synthesize authorityCerificateURL;
 
-- (NSString *) getDirKeyCerificateURL {
-    return [self.params objectForKey:@"DirKeyCerificateURL"];
+- (NSString *) getAuthorityCerificateURL {
+    return [self.params objectForKey:@"AuthorityCerificateURL"];
+}
+
+@synthesize authorityCerificateFpURL;
+
+- (NSString *) getAuthorityCerificateFpURL {
+    return [self.params objectForKey:@"AuthorityCerificateFpURL"];
 }
 
 @synthesize networkStatusURL;
 
 - (NSString *) getNetworkStatusURL {
     return [self.params objectForKey:@"NetworkStatusURL"];
+}
+
+@synthesize circuitLength;
+
+- (NSUInteger) getCircuitLength {
+    NSNumber *length = [self.params objectForKey:@"CircuitLength"];
+    if (length) {
+        return [length integerValue];
+    }
+    return 8;
 }
 
 + (OPConfig *) config {
@@ -105,12 +119,16 @@
     return [[self getServerAtIndex:index] objectForKey:@"v3ident"];
 }
 
+- (NSString *) getFingerprintOfServerAtIndex:(NSUInteger)index {
+    return [[self getServerAtIndex:index] objectForKey:@"fingerprint"];
+}
+
 - (NSString *) getIpAddrOfServerAtIndex:(NSUInteger)index {
     return [[self getServerAtIndex:index] objectForKey:@"ipaddr"];
 }
 
-- (NSString *) getIpPortOfServerAtIndex:(NSUInteger)index {
-    return [[self getServerAtIndex:index] objectForKey:@"ipport"];
+- (NSUInteger) getIpPortOfServerAtIndex:(NSUInteger)index {
+    return [[[self getServerAtIndex:index] objectForKey:@"ipport"] intValue];
 }
 
 @end

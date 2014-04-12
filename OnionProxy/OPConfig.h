@@ -14,20 +14,23 @@
     
 }
 
-@property (readonly, getter = getNodesThreadsCount) NSUInteger nodesThreadsCount;
-@property (readonly, getter = getConsensusThreadsCount) NSUInteger consensusThreadsCount;
+@property (readonly, getter = getMaxJobsCount) NSUInteger maxJobsCount;
 
 @property (readonly, getter = getCacheDir) NSString *cacheDir;
 @property (readonly, getter = getServersCount) NSUInteger serversCount;
 
-@property (readonly, getter = getDirKeyCerificateURL) NSString *dirKeyCerificateURL;
+@property (readonly, getter = getAuthorityCerificateURL) NSString *authorityCerificateURL;
+@property (readonly, getter = getAuthorityCerificateFpURL) NSString *authorityCerificateFpURL;
 @property (readonly, getter = getNetworkStatusURL) NSString *networkStatusURL;
+
+@property (readonly, getter = getCircuitLength) NSUInteger circuitLength;
 
 + (OPConfig *) config;
 
 - (NSString *) getNickOfServerAtIndex:(NSUInteger)index;
 - (NSString *) getIdentDgstOfServerAtIndex:(NSUInteger)index;
+- (NSString *) getFingerprintOfServerAtIndex:(NSUInteger)index;
 - (NSString *) getIpAddrOfServerAtIndex:(NSUInteger)index;
-- (NSString *) getIpPortOfServerAtIndex:(NSUInteger)index;
+- (NSUInteger) getIpPortOfServerAtIndex:(NSUInteger)index;
 
 @end

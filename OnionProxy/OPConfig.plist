@@ -2,14 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NodesMaxThreadsCount</key>
-	<integer>32</integer>
-	<key>ConsensusMaxThreadsCount</key>
-	<integer>16</integer>
+	<key>MaxJobsCount</key>
+	<integer>64</integer>
+	<key>CircuitLength</key>
+	<string>8</string>
+	<key>ConsensusFlavour</key>
+	<string>ns</string>
 	<key>CacheDir</key>
-	<string>/Users/0xffff/Downloads/OnionProxyCache/</string>
-	<key>DirKeyCerificateURL</key>
+	<string>/Volumes/RamDisk/OnionProxyCache/</string>
+	<key>AuthorityCerificateURL</key>
 	<string>/tor/keys/authority.z</string>
+	<key>AuthorityCerificateFpURL</key>
+	<string>/tor/keys/fp/</string>
 	<key>NetworkStatusURL</key>
 	<string>/tor/status-vote/current/consensus.z</string>
 	<key>Servers</key>

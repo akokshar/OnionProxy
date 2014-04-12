@@ -8,30 +8,41 @@
 
 #import "OPTorNode.h"
 #import "OPConfig.h"
-#import "OPJobDispatcher.h"
 #import "OPConsensus.h"
+#import "OPJobDispatcher.h"
 #import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
+NSString * const nodeFingerprintDataKey = @"FingerprintData";
+NSString * const nodeFingerprintStrKey = @"FingerprintStr";
+NSString * const nodeDescriptorDataKey = @"DescriptorData";
+NSString * const nodeDescriptorStrKey = @"DescriptorStr";
+NSString * const nodeIpStrKey = @"IpStr";
+NSString * const nodeOrPortStrKey = @"OrPortStr";
+NSString * const nodeDirPortStrKey = @"DirPortStr";
+NSString * const nodeFlagsStrKey = @"FlagsStr";
+NSString * const nodeVersionStrKey = @"VersionStr";
+NSString * const nodeBandwidthStrKey = @"BandwidthStr";
+NSString * const nodePolicyStrKey = @"PolicyStr";
+
 @interface OPTorNode() {
-    OPJobDispatcher *jobDispatcher;
+    dispatch_queue_t dispatchQueue;
+    NSUInteger updateDelay;
 }
 
 @property (readonly, getter = getCacheFilePath) NSString *cacheFilePath;
 @property (readonly, getter = getResourcePath) NSString *resourcePath;
 
 @property (retain) NSString *ip;
-@property (retain) NSString *orPort;
-@property (retain) NSString *dirPort;
 
-@property (retain) NSData *fingerprint;
+@property (retain, getter = getFingerprint) NSData *fingerprint;
 @property (retain) NSData *currentDescriptorDigest;
 @property (retain) NSData *freshDescriptorDigest;
-@property (atomic) BOOL isUpdating;
+@property (assign) BOOL isUpdating;
 
 @property (retain) NSDate *lastUpdated;
 
-@property (retain) OPRSAPublicKey *signingKey;
+//@property (retain) OPRSAPublicKey *signingKey;
 @property (retain) OPRSAPublicKey *onionKey;
 
 - (BOOL) processDescriptorDocument:(NSString *)descriptorStr;
@@ -62,10 +73,18 @@
 @synthesize freshDescriptorDigest = _freshDescriptorDigest;
 @synthesize lastUpdated = _lastUpdated;
 
+//@synthesize signingKey;
+@synthesize onionKey;
+
 @synthesize cacheFilePath;
 
 - (NSString *) getCacheFilePath {
-    return [NSString stringWithFormat:@"%@%@", [OPConfig config].cacheDir, [self hexStringFromData:self.fingerprint]];
+    if (self.fingerprint) {
+        return [NSString stringWithFormat:@"%@%@", [OPConfig config].cacheDir, [self hexStringFromData:self.fingerprint]];
+    }
+    else {
+        return NULL;
+    }
 }
 
 @synthesize resourcePath;
@@ -90,74 +109,108 @@
         return NO;
     }
     
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    
     NSRegularExpressionOptions optionsRegEx = (NSRegularExpressionDotMatchesLineSeparators | NSRegularExpressionAnchorsMatchLines | NSRegularExpressionUseUnixLineSeparators);
     NSString *descriptorPattern = @"(router .*?"
     "signing-key\\n"
-    "-----BEGIN RSA PUBLIC KEY-----(.*?)-----END RSA PUBLIC KEY-----"
+    "-----BEGIN RSA PUBLIC KEY-----\\n(.*?)\\n-----END RSA PUBLIC KEY-----"
     ".*?"
     "router-signature\\n)"
-    "-----BEGIN SIGNATURE-----(.*?)-----END SIGNATURE-----";
+    "-----BEGIN SIGNATURE-----\\n(.*?)\\n-----END SIGNATURE-----";
     NSRegularExpression *descriptorRegEx = [NSRegularExpression regularExpressionWithPattern:descriptorPattern options:optionsRegEx error:NULL];
     
     NSArray *descriptorMatch = [descriptorRegEx matchesInString:rawDescriptorStr options:NSMatchingReportProgress range:NSMakeRange(0, [rawDescriptorStr length])];
-    
     if ([descriptorMatch count] == 1) {
         NSTextCheckingResult *match = [descriptorMatch objectAtIndex:0];
         NSString *descriptorStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:1]];
-
-        if (![self.freshDescriptorDigest isEqualToData:[self sha1DigestOfData:[descriptorStr dataUsingEncoding:NSUTF8StringEncoding]]]) {
-            [self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+        
+        NSData *descriptorDigest = [self sha1DigestOfText:descriptorStr];
+        
+        if (![self.freshDescriptorDigest isEqualToData:descriptorDigest]) {
+            //[self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+            [pool release];
             return NO;
         }
         
         NSString *signingKeyStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:2]];
-        self.signingKey = [[[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:signingKeyStr] autorelease];
+        OPRSAPublicKey *descrSigningKey = [[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:signingKeyStr];
+        //self.signingKey = descrSigningKey;
+        //[descrSigningKey release];
         
         NSString *signatureStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:3]];
-        if (![self.signingKey verifyBase64SignatureStr:signatureStr forDataDigest:self.freshDescriptorDigest]) {
-            [self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+        if (![descrSigningKey verifyBase64SignatureStr:signatureStr forDataDigest:self.freshDescriptorDigest]) {
+            //[self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+            [descrSigningKey release];
+            [pool release];
             return NO;
         }
+        [descrSigningKey release];
         
-        NSString *onionKeyPattern = @"onion-key\\n-----BEGIN RSA PUBLIC KEY-----(.*?)-----END RSA PUBLIC KEY-----";
+        NSString *onionKeyPattern = @"onion-key\\n-----BEGIN RSA PUBLIC KEY-----\\n(.*?)\\n-----END RSA PUBLIC KEY-----";
         NSRegularExpression *onionKeyRegEx = [NSRegularExpression regularExpressionWithPattern:onionKeyPattern options:optionsRegEx error:NULL];
         NSArray *onionKeyMatch = [onionKeyRegEx matchesInString:descriptorStr options:NSMatchingReportProgress range:NSMakeRange(0, [descriptorStr length])];
         if (![onionKeyMatch count] == 1) {
             [self logMsg:@"Descriptor does not contain onion-key (OR fingerprint=%@)", self.fingerprint];
+            [pool release];
             return NO;
         }
         match = [onionKeyMatch objectAtIndex:0];
         NSString *onionKeyStr = [descriptorStr substringWithRange:[match rangeAtIndex:1]];
-        self.onionKey = [[[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:onionKeyStr] autorelease];
+        OPRSAPublicKey *descrOnionKey = [[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:onionKeyStr];
+        self.onionKey = descrOnionKey;
+        [descrOnionKey release];
+        
+        if (self.onionKey == NULL) {
+            [self logMsg:@"failed to load key from :\n%@", descriptorStr];
+        }
         
         //[self logMsg:@"descriptor is OK!!!. So happy :)"];
     }
+    else {
+        //[self logMsg:@"descriptor pattern missmatch :\n'%@'", rawDescriptorStr];
+        [pool release];
+        return NO;
+    }
 
+    //[pool drain];
+    [pool release];
     return YES;
 }
 
-- (void) retriveDescriptor {
+- (void) prefetchDescriptor {
     
     if (self.freshDescriptorDigest == NULL) {
         return;
     }
-    
+
     if (self.isHasLastDescriptor) {
         return;
     }
 
     @synchronized(self) {
-        if (!self.isUpdating) {
-            self.isUpdating = YES;
-        
-            if (self.currentDescriptorDigest == NULL) {
-                // if this is a very first load attempt try to bypass downloading - check cached information first
-                [jobDispatcher addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
-            }
-            else {
-                [jobDispatcher addJobForTarget:self selector:@selector(updateDescriptor) object:NULL];
-            }
+        if (self.isUpdating) {
+            return;
         }
+
+        self.isUpdating = YES;
+        updateDelay = 0;
+        
+        if (self.currentDescriptorDigest == NULL) {
+            // if this is a very first load attempt try to bypass downloading - check cached information first
+//            dispatch_async(dispatchQueue, ^{
+//                [self loadDescriptor];
+//            });
+            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
+        }
+        else {
+            // this branch is, probably, not needed at all
+//            dispatch_async(dispatchQueue, ^{
+//                [self updateDescriptor];
+//            });
+            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateDescriptor) object:NULL];
+        }
+
     }
 }
 
@@ -167,24 +220,34 @@
 }
 
 - (void) loadDescriptor {
-    NSData *rawDescriptorData = [NSData dataWithContentsOfFile:self.cacheFilePath];
-    NSString *rawDescriptorStr = NULL;
-    
-    if (rawDescriptorData) {
-        rawDescriptorStr = [[NSString alloc] initWithData:rawDescriptorData encoding:NSUTF8StringEncoding];
-    }
+    NSData *rawDescriptorData = [[NSData alloc] initWithContentsOfFile:self.cacheFilePath];
+    NSString *rawDescriptorStr = [[NSString alloc] initWithData:rawDescriptorData encoding:NSUTF8StringEncoding];
     
     if ([self processDescriptorDocument:rawDescriptorStr]) {
         self.currentDescriptorDigest = self.freshDescriptorDigest;
         self.isUpdating = NO;
     }
     else {
-//        NSTimeInterval delay = 1.0; // TODO: Implement update delays
-//        [[OPThreadDispatcher nodesBundle] addJobForTarget:self selector:@selector(updateDescriptor) object:NULL delayedFor:delay];
-        [jobDispatcher addJobForTarget:self selector:@selector(updateDescriptor) object:NULL];
+        NSUInteger delay = updateDelay;
+        if (updateDelay < 60) {
+            updateDelay += arc4random() % 16;
+        }
+        else {
+            updateDelay -= arc4random() % 16;
+        }
+        
+        //
+        // TODO: this can leave cache files lost and not cleared ever.
+        // to implement Invalidation of delayed update or to check if this node is marked as dead.
+        
+//        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatchQueue, ^{
+//            [self updateDescriptor];
+//        });
+        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateDescriptor) object:NULL delayedFor:delay];
     }
     
     [rawDescriptorStr release];
+    [rawDescriptorData release];
 }
 
 - (void) cleanCachedInfo {
@@ -193,12 +256,13 @@
     }
 }
 
-- (void) updateWithDescriptor:(NSData *)digest ip:(NSString *)ip orPort:(NSString *)orPort dirPort:(NSString *)dirPort flags:(NSString *)flags {
+- (void) updateWithParams:(NSDictionary *)nodeParams {
     
-    if (![self.freshDescriptorDigest isEqualToData:digest]) {
-        self.freshDescriptorDigest = digest;
+    if (![self.freshDescriptorDigest isEqualToData:[nodeParams objectForKey:nodeDescriptorDataKey]]) {
+        self.freshDescriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
     }
     
+    NSString *flags = [nodeParams objectForKey:nodeFlagsStrKey];
     NSArray *array = [flags componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     _isValid = [array containsObject:@"Valid"];
     _isNamed = [array containsObject:@"Named"];
@@ -213,53 +277,56 @@
     _isV2Dir = [array containsObject:@"V2Dir"];
     _isBadDirectory = [array containsObject:@"BadDirectory"];
     _isHSDir = [array containsObject:@"HSDir"];
-
+    
+    NSString *ip = [nodeParams objectForKey:nodeIpStrKey];
     if (![self.ip isEqualToString:ip]) {
         self.ip = ip;
     }
     
-    if (![self.orPort isEqualToString:orPort]) {
-        self.orPort = orPort;
-    }
-    
-    if (![self.dirPort isEqualToString:dirPort]) {
-        self.dirPort = dirPort;
-    }
+    NSString *orPort = [nodeParams objectForKey:nodeOrPortStrKey];
+    _orPort = [orPort intValue];
+    NSString *dirPort = [nodeParams objectForKey:nodeDirPortStrKey];
+    _dirPort = [dirPort intValue];
     
     self.lastUpdated = [NSDate date];
 }
 
-- (id) initWithFingerprint:(NSData *)fingerprint descriptor:(NSData *)digest ip:(NSString *)ip orPort:(NSString *)orPort dirPort:(NSString *)dirPort flags:(NSString *)flags {
+- (id) initWithParams:(NSDictionary *)nodeParams {
     self = [super init];
     if (self) {
-        static OPJobDispatcher *jobDispatcherInstance = NULL;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            jobDispatcherInstance = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].nodesThreadsCount];
-        });
-        jobDispatcher = jobDispatcherInstance;
-
-        self.fingerprint = fingerprint;
+        dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
+        
+        //self.signingKey = NULL;
+        self.onionKey = NULL;
+        
+        updateDelay = 0;
+        
+        self.fingerprint = [nodeParams objectForKey:nodeFingerprintDataKey];
         self.freshDescriptorDigest = NULL;
         self.currentDescriptorDigest = NULL;
-
+        
         self.isUpdating = NO;
         
-        [self updateWithDescriptor:digest ip:ip orPort:orPort dirPort:dirPort flags:flags];
-     }
+        [self updateWithParams:nodeParams];
+    }
     return self;
 }
 
 - (void) dealloc {
+    [self logMsg:@"dealloc TorNode"];
+    
     self.ip = NULL;
-    self.orPort = NULL;
-    self.dirPort = NULL;
     
     self.fingerprint = NULL;
     self.currentDescriptorDigest = NULL;
     self.freshDescriptorDigest = NULL;
     
     self.lastUpdated = NULL;
+
+    //self.signingKey = NULL;
+    self.onionKey = NULL;
+    
+    dispatch_release(dispatchQueue);
 
     [super dealloc];
 }

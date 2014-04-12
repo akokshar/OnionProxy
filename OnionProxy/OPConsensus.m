@@ -7,21 +7,15 @@
 
 #import "OPConsensus.h"
 #import "OPConfig.h"
-#import "OPJobDispatcher.h"
+//#import "OPJobDispatcher.h"
 #import "OPResourceDownloader.h"
 #import "OPAuthority.h"
 #import "OPTorNode.h"
 
-NSString * const nodeFingerprintKey = @"Fingerprint";
-NSString * const nodeDescriptorKey = @"Descriptor";
-NSString * const nodeIpKey = @"Ip";
-NSString * const nodeOrPortKey = @"OrPort";
-NSString * const nodeDirPortKey = @"DirPort";
-NSString * const nodeFlagsKey = @"Flags";
-
 @interface OPConsensus() {
     NSMutableDictionary *nodes;
-    OPJobDispatcher *jobDispatcher;
+    dispatch_queue_t dispatchQueue;
+//    OPJobDispatcher *jobDispatcher;
 }
 
 @property (readonly, getter = getCacheFilePath) NSString *cacheFilePath;
@@ -39,12 +33,15 @@ NSString * const nodeFlagsKey = @"Flags";
 @property (retain) NSArray *exitNodesKeys;
 @property (assign) NSUInteger exitNodesIndex;
 
+@property (retain) NSArray *routerNodesKeys;
+@property (assign) NSUInteger routerNodesIndex;
+
 - (BOOL) processV3ConsensusDocument:(NSString *)consensusStr;
 - (void) loadConsensusFromCacheFile;
 - (void) updateConsensus;
 - (void) scheduleUpdate;
 
-- (void) processNodeWithParams:(NSDictionary *)nodeParams;
+- (void) processNodeWithParams:(NSMutableDictionary *)nodeParams;
 - (void) organize;
 - (NSArray *) arrayByShufflingArray:(NSArray *)array;
 
@@ -115,6 +112,30 @@ NSString * const nodeFlagsKey = @"Flags";
     return [result autorelease];
 }
 
+@synthesize randomRouterNode;
+
+- (OPTorNode *) getRandomRouterNode {
+    OPTorNode *result = NULL;
+    
+    @synchronized(self) {
+        if (self.routerNodesKeys) {
+            if ([self.routerNodesKeys count] > 0) {
+                result = [nodes objectForKey:[self.routerNodesKeys objectAtIndex:self.routerNodesIndex]];
+                [result retain];
+                
+                self.routerNodesIndex++;
+                if (self.routerNodesIndex == [self.routerNodesKeys count]) {
+                    self.routerNodesIndex = 0;
+                    self.routerNodesKeys = [self arrayByShufflingArray:self.routerNodesKeys];
+                }
+                
+            }
+        }
+    }
+    
+    return [result autorelease];
+}
+
 - (NSArray *) arrayByShufflingArray:(NSArray *)array {
     if (array == NULL || [array count] == 0) {
         return array;
@@ -128,6 +149,7 @@ NSString * const nodeFlagsKey = @"Flags";
 }
 
 - (void) organize {
+    [self logMsg:@"All nodes processed in: %f seconds", [[NSDate date] timeIntervalSinceDate:self.lastUpdated]];
 
     [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Organizing nodes"]];
     [self logMsg:@"Organizing nodes. nodes count: %lu", (unsigned long)[nodes count]];
@@ -135,7 +157,7 @@ NSString * const nodeFlagsKey = @"Flags";
     NSSet *v2DirNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
         OPTorNode *node = (OPTorNode *)obj;
         if ([self.lastUpdated isLessThan:node.lastUpdated]) {
-            return node.isV2Dir;
+            return node.isV2Dir && node.isRunning;
         }
         return NO;
     }];
@@ -149,7 +171,7 @@ NSString * const nodeFlagsKey = @"Flags";
     NSSet *exitNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
         OPTorNode *node = (OPTorNode *)obj;
         if ([self.lastUpdated isLessThan:node.lastUpdated]) {
-            return node.isExit;
+            return node.isExit && node.isRunning;
         }
         return NO;
     }];
@@ -160,45 +182,63 @@ NSString * const nodeFlagsKey = @"Flags";
         [self.tfExitNodesCount setStringValue:[NSString stringWithFormat:@"Exit nodes count: %lu", (unsigned long)self.exitNodesKeys.count]];
     }
     
+    NSSet *routerNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
+        OPTorNode *node = (OPTorNode *)obj;
+        if ([self.lastUpdated isLessThan:node.lastUpdated]) {
+            return node.isFast && node.isRunning && node.isStable;
+        }
+        return NO;
+    }];
+    
+    @synchronized(self) {
+        self.routerNodesKeys = [self arrayByShufflingArray:[routerNodesSet allObjects]];
+        self.routerNodesIndex = 0;
+        [self.tfRoutersCount setStringValue:[NSString stringWithFormat:@"Routers (Fast, Running and Stable) count: %lu", (unsigned long)self.routerNodesKeys.count]];
+    }
+    
+    [self logMsg:@"ready in %f seconds", [[NSDate date] timeIntervalSinceDate:self.lastUpdated]];
+    
     self.lastUpdated = [NSDate date];
     [self scheduleUpdate];
 }
 
-- (void) processNodeWithParams:(NSDictionary *)nodeParams {
+- (void) processNodeWithParams:(NSMutableDictionary *)nodeParams {
     OPTorNode *node = NULL;
     
-    NSData *fingerprintData = [self decodeBase64Str:[[nodeParams objectForKey:nodeFingerprintKey] stringByAppendingString:@"="]];
+    NSData *fingerprintData = [self decodeBase64Str:[[nodeParams objectForKey:nodeFingerprintStrKey] stringByAppendingString:@"="]];
     if (fingerprintData == NULL) {
-        [self logMsg:@"error while decoding fingerprint '%@'", [nodeParams objectForKey:nodeFingerprintKey]];
+        [self logMsg:@"error while decoding fingerprint '%@'", [nodeParams objectForKey:nodeFingerprintStrKey]];
         return;
     }
+    [nodeParams setObject:fingerprintData forKey:nodeFingerprintDataKey];
     
-    NSData *descrDigestData = [self decodeBase64Str:[[nodeParams objectForKey:nodeDescriptorKey] stringByAppendingString:@"="]];
-    
-    //@synchronized(self) {
-        node = [nodes objectForKey:[nodeParams objectForKey:nodeFingerprintKey]];
-    //}
+    NSData *descrDigestData = [self decodeBase64Str:[[nodeParams objectForKey:nodeDescriptorStrKey] stringByAppendingString:@"="]];
+    if (descrDigestData == NULL) {
+        [self logMsg:@"error while decoding descriptor digest '%@'", [nodeParams objectForKey:nodeFingerprintStrKey]];
+        return;
+    }
+    [nodeParams setObject:descrDigestData forKey:nodeDescriptorDataKey];
+
+    @synchronized(self) {
+        node = [nodes objectForKey:fingerprintData];
+    }
     
     if (node == NULL) {
-        node = [[OPTorNode alloc] initWithFingerprint:fingerprintData
-                                           descriptor:descrDigestData
-                                                   ip:[nodeParams objectForKey:nodeIpKey]
-                                               orPort:[nodeParams objectForKey:nodeOrPortKey]
-                                              dirPort:[nodeParams objectForKey:nodeDirPortKey]
-                                                flags:[nodeParams objectForKey:nodeFlagsKey]];
+        node = [[OPTorNode alloc] initWithParams:nodeParams];
         @synchronized(self) {
-            [nodes setObject:node forKey:[nodeParams objectForKey:nodeFingerprintKey]];
-            [self.tfNodesCount setStringValue:[NSString stringWithFormat:@"Total nodes count: %lu", (unsigned long)nodes.count]];
+            [nodes setObject:node forKey:fingerprintData];
         }
-        //[node retriveDescriptor];
+        [self.tfNodesCount setStringValue:[NSString stringWithFormat:@"Total nodes count: %lu", (unsigned long)nodes.count]];
+        
+        // ***
+        // for test only. do not load descriptors from here as it will get them from authorities on very first load cicle.
+        [node prefetchDescriptor];
+        // ***
+        
         [node release];
     }
     else {
-        [node updateWithDescriptor:descrDigestData
-                                ip:[nodeParams objectForKey:nodeIpKey]
-                            orPort:[nodeParams objectForKey:nodeOrPortKey]
-                           dirPort:[nodeParams objectForKey:nodeDirPortKey]
-                             flags:[nodeParams objectForKey:nodeFlagsKey]];
+        [node updateWithParams:nodeParams];
     }
 }
 
@@ -212,6 +252,8 @@ NSString * const nodeFlagsKey = @"Flags";
     if (![consensusStr hasPrefix:@"network-status-version 3"]) {
         return result;
     }
+    
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     
     NSRegularExpressionOptions optionsRegEx = (NSRegularExpressionDotMatchesLineSeparators | NSRegularExpressionAnchorsMatchLines | NSRegularExpressionUseUnixLineSeparators);
     NSString *consensusPattern = @""
@@ -236,7 +278,6 @@ NSString * const nodeFlagsKey = @"Flags";
         NSArray *consensusMatch = [consensusRegEx matchesInString:consensusStr options:NSMatchingReportProgress range:NSMakeRange(0, [consensusStr length])];
         
         if ([consensusMatch count] == 1) {
-            self.lastUpdated = [NSDate date];
             NSTextCheckingResult *match = [consensusMatch objectAtIndex:0];
             
             BOOL isSignatureValid = NO;
@@ -270,7 +311,7 @@ NSString * const nodeFlagsKey = @"Flags";
                     }
                     else {
                         if (sha256 == NULL) {
-                            sha256 = [self sha2DigestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]] digestLen:256];
+                            sha256 = [self sha256DigestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]]];
                         }
                         digest = sha256;
                     }
@@ -279,40 +320,55 @@ NSString * const nodeFlagsKey = @"Flags";
                         validSignaturesCount++;
                     }
                 }
-                isSignatureValid = (validSignaturesCount == totalSignaturesCount);
+                isSignatureValid = (validSignaturesCount >= totalSignaturesCount / 3 * 2);
                 
-                [self logMsg:@"Signature verified by %lu authorities", validSignaturesCount];
+                [self logMsg:@"Consensus signatures: %li. Verified: %lu.", totalSignaturesCount, validSignaturesCount];
             }
             
             if (isSignatureValid) {
+                self.lastUpdated = [NSDate date];
+                
                 self.flavor = [consensusStr substringWithRange:[match rangeAtIndex:3]];
                 
                 // TODO: parse microdesc router info
                 
                 NSString *nodePattern = @""
-                "r (\\S+) (\\S+) (\\S+) (.*?) (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d+) (\\d+)\\n"
-                "(a .*?\\n){0,}"
-                "s (.*?)\\n"
-                "(v .*?\\n){0,1}"
-                "(w .*?\\n){0,1}"
-                "(p .*?\\n){0,1}";
+                "r (\\S+) (\\S+) (\\S+) (.*?) (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d+) (\\d+)\\n" // $1 $2 $3 $4 $5 $6 $7
+                "(a .*?\\n){0,}" // $8
+                "s (.*?)\\n" // $9 Flags
+                "(v (.*?)\\n){0,1}" // $11 Version
+                "(w (.*?)\\n){0,1}" // $13 Bandwidth
+                "(p (.*?)\\n){0,1}"; // $15 Policy
                 
                 NSRegularExpression *nodeRegEx = [NSRegularExpression regularExpressionWithPattern:nodePattern options:optionsRegEx error:NULL];
                 if (nodeRegEx) {
                     NSArray *nodesMatch = [nodeRegEx matchesInString:consensusStr options:NSMatchingReportProgress range:[match rangeAtIndex:19]];
-                    
                     [self logMsg:@"loading nodes"];
                     for (NSTextCheckingResult *nodeMatch in nodesMatch) {
-                        NSDictionary *nodeParams = [[NSDictionary alloc] initWithObjectsAndKeys:
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:2]], nodeFingerprintKey,
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:3]], nodeDescriptorKey,
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:5]], nodeIpKey,
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:6]], nodeOrPortKey,
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:7]], nodeDirPortKey,
-                                                    [consensusStr substringWithRange:[nodeMatch rangeAtIndex:9]], nodeFlagsKey,
-                                                    nil];
+                        NSMutableDictionary *nodeParams = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:2]], nodeFingerprintStrKey,
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:3]], nodeDescriptorStrKey,
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:5]], nodeIpStrKey,
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:6]], nodeOrPortStrKey,
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:7]], nodeDirPortStrKey,
+                                                           [consensusStr substringWithRange:[nodeMatch rangeAtIndex:9]], nodeFlagsStrKey,
+                                                           nil];
+                        if ([nodeMatch rangeAtIndex:10].location != NSNotFound) {
+                            [nodeParams setObject:[consensusStr substringWithRange:[nodeMatch rangeAtIndex:11]] forKey:nodeVersionStrKey];
+                        }
+                        if ([nodeMatch rangeAtIndex:12].location != NSNotFound) {
+                            [nodeParams setObject:[consensusStr substringWithRange:[nodeMatch rangeAtIndex:13]] forKey:nodeBandwidthStrKey];
+                        }
+                        if ([nodeMatch rangeAtIndex:14].location != NSNotFound) {
+                            [nodeParams setObject:[consensusStr substringWithRange:[nodeMatch rangeAtIndex:15]] forKey:nodePolicyStrKey];
+                        }
+             
+                        dispatch_async(dispatchQueue, ^{
+                            [self processNodeWithParams:nodeParams];
+                        });
                         
-                        [jobDispatcher addJobForTarget:self selector:@selector(processNodeWithParams:) object:nodeParams];
+//                        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(processNodeWithParams:) object:nodeParams];
+                        
                         [nodeParams release];
                         //break;
                     }
@@ -322,8 +378,16 @@ NSString * const nodeFlagsKey = @"Flags";
                 _freshUntil = [[NSDate alloc] initWithString:[NSString stringWithFormat:@"%@ +0000", [consensusStr substringWithRange:[match rangeAtIndex:7]]]];
                 _validUntil = [[NSDate alloc] initWithString:[NSString stringWithFormat:@"%@ +0000", [consensusStr substringWithRange:[match rangeAtIndex:8]]]];
                 
-                [jobDispatcher addBarierTarget:self selector:@selector(organize) object:NULL];
+                [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Waiting for nodes to initialize"]];
+                dispatch_barrier_async(dispatchQueue, ^{
+                    [self organize];
+                });
+                
+//                [[OPJobDispatcher disparcher] addBarierTarget:self selector:@selector(organize) object:NULL];
                 result = YES;
+            }
+            else {
+                [self logMsg:@"Consensus signature verification failed"];
             }
         }
         else {
@@ -336,6 +400,8 @@ NSString * const nodeFlagsKey = @"Flags";
     
     [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Processing consensus document done"]];
     [self logMsg:@"Processing consensus document done"];
+    
+    [pool release];
     
     return result;
 }
@@ -359,8 +425,15 @@ NSString * const nodeFlagsKey = @"Flags";
 
 - (void) updateConsensus {
     [self logMsg:@"Updating consensus"];
-    [OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5];
-    [self loadConsensusFromCacheFile];
+    if ([OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5]) {
+        [self loadConsensusFromCacheFile];
+    }
+    else {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatchQueue, ^{
+            [self updateConsensus];
+        });
+//        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateConsensus) object:NULL delayedFor:10];
+    }
 }
 
 - (void) scheduleUpdate {
@@ -368,50 +441,64 @@ NSString * const nodeFlagsKey = @"Flags";
     [self logMsg:@"Scheduling consensus update..."];
     
     if (self.lastUpdated == NULL) {
-        [jobDispatcher addJobForTarget:self selector:@selector(updateConsensus) object:NULL];
+        [self logMsg:@"No consensus. Update now"];
+        dispatch_async(dispatchQueue, ^{
+            [self updateConsensus];
+        });
+//        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateConsensus) object:NULL];
     }
     else {
-        [self logMsg:@"Update in 5 seconds"];
-
-        [jobDispatcher addJobForTarget:self selector:@selector(updateConsensus) object:NULL delayedFor:5];
-        return;
+//        [self logMsg:@"Update in 5 seconds"];
+//        [jobDispatcher addJobForTarget:self selector:@selector(updateConsensus) delayedFor:5];
+//        return;
         
         if ([self.validUntil isLessThanOrEqualTo:[NSDate date]]) {
-            [jobDispatcher addJobForTarget:self selector:@selector(updateConsensus) object:NULL];
+            [self logMsg:@"Consensus too old. Update now"];
+            dispatch_async(dispatchQueue, ^{
+                [self updateConsensus];
+            });
+//            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateConsensus) object:NULL];
             return;
         }
         
-        NSDate *updateAfter = [self.freshUntil dateByAddingTimeInterval:ceil([self.validUntil timeIntervalSinceDate:self.freshUntil] * 0.5)];
-        NSDate *updateBefore = [self.freshUntil dateByAddingTimeInterval:ceil([self.validUntil timeIntervalSinceDate:self.freshUntil] * 0.75)];
+        NSDate *updateAfter = [self.freshUntil dateByAddingTimeInterval:ceil([self.validUntil timeIntervalSinceDate:self.freshUntil] * 3/4)];
+        NSDate *updateBefore = [self.freshUntil dateByAddingTimeInterval:ceil([self.validUntil timeIntervalSinceDate:self.freshUntil] * 7/8)];
         
         NSTimeInterval updateInterval = [updateBefore timeIntervalSinceDate:updateAfter] * ((float)arc4random() / RAND_MAX);
         NSDate *updateTime = [updateAfter dateByAddingTimeInterval:updateInterval];
 
         [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Consensus valid till %@. Next update at %@", self.validUntil, updateTime]];
         [self logMsg:@"Consensus valid till %@. Next update at %@", self.validUntil, updateTime];
-        [jobDispatcher addJobForTarget:self selector:@selector(updateConsensus) object:NULL delayedFor:[updateTime timeIntervalSinceNow]];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([updateTime timeIntervalSinceNow] * NSEC_PER_SEC)), dispatchQueue, ^{
+            [self updateConsensus];
+        });
+//        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateConsensus) object:NULL delayedFor:[updateTime timeIntervalSinceNow]];
     }
 }
 
-//- (id) init {
+- (IBAction)dispatcherResune:(id)sender {
+    //[jobDispatcher resume];
+}
+
 - (void) consensusInit {
-//    self = [super init];
-//    if (self) {
-        [self logMsg:@"INIT CONSENSUS"];
-        nodes = [[NSMutableDictionary alloc] initWithCapacity:5500];
-        jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].consensusThreadsCount];
+    [self logMsg:@"INIT CONSENSUS"];
+    nodes = [[NSMutableDictionary alloc] initWithCapacity:5500];
+//    jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].consensusJobsCount];
+    dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
+
+    self.v2DirNodesKeys = NULL;
+    self.exitNodesKeys = NULL;
     
-        self.v2DirNodesKeys = NULL;
-        self.exitNodesKeys = NULL;
-        
-        self.validAfter = NULL;
-        self.freshUntil = NULL;
-        self.validUntil = NULL;
-        self.lastUpdated = NULL;
+    self.validAfter = NULL;
+    self.freshUntil = NULL;
+    self.validUntil = NULL;
+    self.lastUpdated = NULL;
+
+    dispatch_async(dispatchQueue, ^{
+        [self loadConsensusFromCacheFile];
+    });
     
-        [jobDispatcher addJobForTarget:self selector:@selector(loadConsensusFromCacheFile) object:NULL];
-//    }
-//    return self;
+//    [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadConsensusFromCacheFile) object:NULL];
 }
 
 - (void) dealloc {
@@ -425,7 +512,8 @@ NSString * const nodeFlagsKey = @"Flags";
     self.v2DirNodesKeys = NULL;
     self.exitNodesKeys = NULL;
     
-    [jobDispatcher release];
+    dispatch_release(dispatchQueue);
+//    [jobDispatcher release];
     [nodes release];
     
     [super dealloc];
@@ -440,7 +528,6 @@ NSString * const nodeFlagsKey = @"Flags";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         instance = [[super allocWithZone:NULL] init];
-        //instance = [[OPConsensus alloc] init];
         [instance consensusInit];
     });
     return instance;

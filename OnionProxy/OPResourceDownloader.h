@@ -14,7 +14,7 @@
     
 }
 
-+ (BOOL) downloadFromIp:(NSString *)ip port:(NSString *)port resource:(NSString *)resource to:(NSString *)file timeout:(NSUInteger)timeout;
++ (BOOL) downloadFromIp:(NSString *)ip port:(NSUInteger)port resource:(NSString *)resource to:(NSString *)file timeout:(NSUInteger)timeout;
 + (BOOL) downloadResource:(NSString *)resource to:(NSString *)file timeout:(NSUInteger)timeout;
 + (BOOL) downloadFromAuthorityResource:(NSString *)resource to:(NSString *)file timeout:(NSUInteger)timeout;
 

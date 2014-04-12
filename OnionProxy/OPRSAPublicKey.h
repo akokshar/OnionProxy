@@ -15,9 +15,11 @@
 }
 
 @property (readonly, getter = getDigestHexString) NSString *digestHexString;
+@property (retain) NSData *keyData1;
 
 - (id) initWithBase64DerEncodingStr:(NSString *)keyEncoding;
 
--(BOOL) verifyBase64SignatureStr:(NSString *)signatureStr forDataDigest:(NSData *)digest;
+- (BOOL) verifyBase64SignatureStr:(NSString *)signatureStr forDataDigest:(NSData *)digest;
+- (NSData *) encryptData:(NSData *)data;
 
 @end

@@ -16,8 +16,8 @@
 
 - (NSData *) sha1DigestOfData:(NSData *)data;
 - (NSData *) sha1DigestOfText:(NSString *)text;
-- (NSData *) sha2DigestOfData:(NSData *)data digestLen:(NSUInteger)digestLen;
-- (NSData *) sha2DigestOfText:(NSString *)text digestLen:(NSUInteger)digestLen;
+- (NSData *) sha256DigestOfData:(NSData *)data;
+- (NSData *) sha256DigestOfText:(NSString *)text;
 
 - (NSData *) decodeBase64Str:(NSString *)str;
 

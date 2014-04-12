@@ -7,12 +7,10 @@
 //
 
 #import "OPAppDelegate.h"
-#import "OPConsensus.h"
-#import "OPAuthority.h"
-#import "OPTorNetwork.h"
+#import "OPCircuit.h"
 
 @interface OPAppDelegate() {
-  OPTorNetwork *torNetwork;
+    OPCircuit *circuit;
 }
 
 @end
@@ -20,12 +18,23 @@
 @implementation OPAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-    torNetwork = [OPTorNetwork torNetwork];
-    [self.tfConsensusNodesCount setStringValue:[NSString stringWithFormat:@"%lu", (unsigned long)[OPAuthority authority].count]];
+
 }
 
 - (void) applicationWillTerminate:(NSNotification *)notification {
-//    [torNetwork release];
+
+}
+
+- (IBAction)TEST:(id)sender {
+    circuit = [[OPCircuit alloc] initWithDestinationPort:80];
+}
+
+- (IBAction)TEST2:(id)sender {
+    if (circuit) {
+        [circuit close];
+        [circuit release];
+        circuit = NULL;
+    }
 }
 
 @end
