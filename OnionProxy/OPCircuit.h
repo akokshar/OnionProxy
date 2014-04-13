@@ -13,8 +13,6 @@
     
 }
 
-@property (readonly, getter = getCircuitID) uint16_t circuitID;
-
 - (id) initWithDestinationPort:(NSUInteger)port;
 - (void) close;
 

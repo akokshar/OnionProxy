@@ -13,18 +13,58 @@
 NSString * const connectionIpKey = @"Ip";
 NSString * const connectionPortKey = @"Port";
 
-NSUInteger const cellSizeMax = 512;
+NSUInteger const OPCellSizeMax = 512;
+NSUInteger const OPCellPayloadLen = 509;
+
+#pragma pack (1)
+typedef struct {
+    uint16_t circuitID;
+    uint8_t command;
+    uint8_t payload[];
+} OPCell;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct {
+    uint16_t length;
+    uint8_t data[];
+} OPCellPayload;
+#pragma pack()
+
+//// Fixed-length cell
+//uint8_t const commandCellPadding = 0;   //(Padding)                 (See Sec 7.2)
+//uint8_t const commandCellCreate = 1;    //(Create a circuit)        (See Sec 5.1)
+//uint8_t const commandCellCreated = 2;   //(Acknowledge create)      (See Sec 5.1)
+////3 -- RELAY       //(End-to-end data)         (See Sec 5.5 and 6)
+//uint8_t const commandCellDestroy = 4;   //(Stop using a circuit)    (See Sec 5.4)
+////5 -- CREATE_FAST //(Create a circuit, no PK) (See Sec 5.1)
+////6 -- CREATED_FAST// (Circuit created, no PK) (See Sec 5.1)
+//uint8_t const commandCellNetinfo = 8;   //(Time and address info)   (See Sec 4.5)
+////9 -- RELAY_EARLY //(End-to-end data; limited)(See Sec 5.6)
+//uint8_t const commandCellCreate2 = 10;  //(Extended CREATE cell)    (See Sec 5.1)
+//uint8_t const commandCellCreated2 = 11; //(Extended CREATED cell)   (See Sec 5.1)
+//
+//// Variable-length command values
+//uint8_t const commandCellVersions = 7;  //(Negotiate proto version) (See Sec 4)
+////128 -- VPADDING  //(Variable-length padding) (See Sec 7.2)
+//uint8_t const commandCellCerts = 129;    //(Certificates)            (See Sec 4.2)
+//uint8_t const commandCellAuthChallenge = 130;   //(Challenge value)    (See Sec 4.3)
+//uint8_t const commandCellAuthenticate = 131;    //(Client authentication)(See Sec 4.5)
+////132 -- AUTHORIZE //(Client authorization)    (Not yet used)
 
 @interface OPConnection() {
     NSThread *connectionThread;
     NSMutableArray *oBuffer;
     NSUInteger bytesSent;
+    NSMutableData *iBuffer;
+    NSUInteger bytesReceived;
 }
 
 @property (atomic) BOOL isRunning;
 @property (retain) NSOutputStream *oStream;
 @property (retain) NSInputStream *iStream;
 @property (assign) OPConnectionHandshakeType handshakeType;
+@property (assign) OPConnectionProtocolVersion protocolVersion;
 
 - (void) doConnectWithParams:(NSDictionary *)params;
 - (void) startThread;
@@ -32,11 +72,56 @@ NSUInteger const cellSizeMax = 512;
 - (void) doStopThread;
 - (void) stopThread;
 - (void) doDisconnect;
+
++ (uint16_t) generateCircuitID;
+- (BOOL) isVariableLenCellOfCommand:(OPConnectionCommand)command;
+
 @end
 
 @implementation OPConnection
 
 @synthesize isConnected = _isConnected;
+
+@synthesize circuitID = _circuitID;
+
+- (uint16_t) getCircuitID {
+    if (_circuitID == 0) {
+        _circuitID = [OPConnection generateCircuitID];
+    }
+    return _circuitID;
+}
+
++ (uint16_t) generateCircuitID {
+    static uint16_t lastID = 0;
+    return lastID + arc4random() % 13;
+}
+
+- (BOOL) isVariableLenCellOfCommand:(OPConnectionCommand)command {
+    switch (self.protocolVersion) {
+        case OPConnectionProtocolVersionV3: {
+            if (command == OPConnectionCommandVersions || command >= 128) {
+                return YES;
+            }
+        } break;
+
+        case OPConnectionProtocolVersionV2: {
+            if (command == OPConnectionCommandVersions) {
+                return YES;
+            }
+        } break;
+
+        case OPConnectionProtocolVersionV1: {
+            return NO;
+        }
+            
+        case OPConnectionProtocolVersionUnknown: {
+            if (command == OPConnectionCommandVersions || command >= 128) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
 
 - (BOOL) connectToIp:(NSString *)ip port:(NSUInteger)port {
     @synchronized(self) {
@@ -46,7 +131,7 @@ NSUInteger const cellSizeMax = 512;
                                     ip, connectionIpKey,
                                     [NSNumber numberWithInteger:port], connectionPortKey, nil];
             
-            [self startThread];
+            [self startThread]; //TODO: this must be causing Spinlock in Run method. Rework this later
             [self performSelector:@selector(doConnectWithParams:) onThread:connectionThread withObject:params waitUntilDone:YES];
             
             if (!self.isConnected) {
@@ -85,13 +170,10 @@ NSUInteger const cellSizeMax = 512;
     [oStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
     
     NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
-                              //[NSNumber numberWithBool:YES], kCFStreamSSLAllowsExpiredCertificates,
                               [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
                               [NSNumber numberWithBool:YES],  kCFStreamSSLValidatesCertificateChain,
                               kCFNull, kCFStreamSSLPeerName,
                               nil];
-//    [iStream setProperty:settings forKey:kCFStreamPropertySSLSettings];
-//    [oStream setProperty:settings forKey:kCFStreamPropertySSLSettings];
     
     CFReadStreamSetProperty((CFReadStreamRef)iStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
     CFWriteStreamSetProperty((CFWriteStreamRef)oStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
@@ -149,7 +231,7 @@ NSUInteger const cellSizeMax = 512;
     self.iStream = NULL;
     self.oStream = NULL;
     
-    [self.delegate connection:self event:OPConnectionEventDisconnected object:NULL];
+    [self.delegate connection:self onEvent:OPConnectionEventDisconnected];
     [self logMsg:@"doDisconnect"];
 }
 
@@ -159,6 +241,8 @@ NSUInteger const cellSizeMax = 512;
             _isConnected = NO;
             [self performSelector:@selector(doDisconnect) onThread:connectionThread withObject:NULL waitUntilDone:NO];
             [self stopThread];
+            [iBuffer setLength:0];
+            [oBuffer removeAllObjects];
             [self logMsg:@"disconnect"];
         }
     }
@@ -188,7 +272,7 @@ NSUInteger const cellSizeMax = 512;
 
 -(void) stream:(NSStream *)stream handleEvent:(NSStreamEvent)streamEvent {
     
-    if (self.handshakeType == OPConnectionHandshkeUndefined) {
+    if (self.handshakeType == OPConnectionHandshkeUnknown) {
         if (streamEvent == NSStreamEventHasBytesAvailable || streamEvent == NSStreamEventHasSpaceAvailable) {
             NSArray *certs = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
             //[self logMsg:@"%@ number of certs = %lu",[stream class], (unsigned long)[certs count]];
@@ -200,66 +284,61 @@ NSUInteger const cellSizeMax = 512;
             }
             
             if (certs.count == 2) {
-                self.handshakeType = OPConnectionHandshkeV1;
+                self.handshakeType = OPConnectionHandshkeCertificatesUpFront;
+                self.protocolVersion = OPConnectionProtocolVersionV1;
                 [self logMsg:@"OPConnectionHandshkeV1"];
+                [self disconnect]; // hot going to support this for now
+                return;
             }
             else {
-                self.handshakeType = OPConnectionHandshkeV3;
-                
-                //SecCertificateRef certificate = (SecCertificateRef) [certs objectAtIndex:0];
-                //SecKeyRef remoteSecKey = NULL;
-                //SecCertificateCopyPublicKey(certificate, &remoteSecKey);
-                //size_t keyLen = SecKeyGetBlockSize(remoteSecKey);
-                //CFRelease(remoteSecKey);
-                //
-                //if (keyLen <= 128) {
-                //    //[self logMsg:@"keyLen = '%zu'", keyLen];
-                //    [self logMsg:@"OPConnectionHandshkeV2"];
-                //    self.handshakeType = OPConnectionHandshkeV2;
-                //}
-                
                 // certificate self-signed. NSStream did it for us??
+                self.handshakeType = OPConnectionHandshkeInProtocol;
+                [self logMsg:@"OPConnectionHandshkeV3"];
                 
-                // TODO:
-                // Check SecCertificateIsSelfSigned
-                // Check Some component other than "commonName" is set in the subject or issuer DN of the certificate.
-                // The commonName of the subject or issuer of the certificate ends with a suffix other than ".net".
-                
-                // NSDictionary *certValues = (NSDictionary *) SecCertificateCopyValues(certificate, NULL, NULL);
-                // [self logMsg:@"%@", certValues];
-                
-                //[self logMsg:@"OPConnectionHandshkeV3"];
             }
-            // check cifers
-            //        CFDataRef data = (CFDataRef) CSReadtreamCopyProperty(stream, kCFStreamPropertySSLContext);
-            //        SSLContextRef sslContext;
-            //        CFDataGetBytes(data, CFRangeMake(0, sizeof(SSLContextRef)), (UInt8*)&sslContext);
-            //        OSStatus SSLGetNumberEnabledCiphers (
-            //                                             SSLContextRef context,
-            //                                             size_t *numCiphers
-            //                                             );
-            //       OSStatus SSLGetEnabledCiphers (
-            //                                       SSLContextRef context,
-            //                                       SSLCipherSuite *ciphers,
-            //                                       size_t *numCiphers
-            //                                       );
         }
     }
     
     switch (streamEvent) {
         case NSStreamEventOpenCompleted: {
-            [self logMsg:@"NSStreamEventOpenCompleted %@", [stream class]];
+            //[self logMsg:@"NSStreamEventOpenCompleted %@", [stream class]];
+            
             if ([stream isKindOfClass:[NSOutputStream class]]) {
-                [self.delegate connection:self event:OPConnectionEventConnected object:NULL];
+                [oBuffer removeAllObjects];
+                
+                // In versions higher then v1 (renegotiation and in-protocol) Version Cell have to be send first
+                if (self.protocolVersion != OPConnectionProtocolVersionV1) {
+                    uint16_t versions[] = { CFSwapInt16HostToBig(3), CFSwapInt16HostToBig(2) };
+                    size_t cellSize = sizeof(OPCell) + sizeof(OPCellPayload) + sizeof(versions);
+                    
+                    OPCell *versionsCell = malloc(cellSize);
+                    versionsCell->circuitID = self.circuitID;
+                    versionsCell->command = OPConnectionCommandVersions;
+                    
+                    OPCellPayload *payload = (OPCellPayload *) versionsCell->payload;
+                    payload->length = CFSwapInt16HostToBig(sizeof(versions));
+                    memcpy(payload->data, versions, sizeof(versions));
+                    
+                    //[self logMsg:@"Versions Cell data '%@' sizeof %lu", [NSData dataWithBytes:versionsCell length:cellSize], cellSize];
+                    [oBuffer addObject:[NSData dataWithBytes:versionsCell length:cellSize]];
+                    
+                    free(versionsCell);
+                }
+            }
+            
+            if ([stream isKindOfClass:[NSInputStream class]]) {
+                [iBuffer setLength:0];
             }
         } break;
             
         case NSStreamEventHasSpaceAvailable: {
-            [self logMsg:@"NSStreamEventHasSpaceAvailable %@", [stream class]];
+            //[self logMsg:@"NSStreamEventHasSpaceAvailable %@", [stream class]];
+            
             if (oBuffer.count == 0) {
                 bytesSent = 0;
                 return;
             }
+            
             NSData *data = [oBuffer objectAtIndex:0];
             if (bytesSent == data.length) {
                 [self logMsg:@"Sent %lu bytes", (unsigned long)bytesSent];
@@ -276,17 +355,88 @@ NSUInteger const cellSizeMax = 512;
         } break;
             
         case NSStreamEventHasBytesAvailable: {
-            [self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
-            uint8_t iBuffer[cellSizeMax];
-            NSInteger bytesReceived = 0;
+            //[self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
+            uint8_t buf[OPCellSizeMax];
+            NSInteger len = 0;
+            len = [self.iStream read:buf maxLength:OPCellSizeMax];
             
-            bytesReceived = [self.iStream read:iBuffer maxLength:cellSizeMax];
-            if (bytesReceived < 0) {
+            if (len < 0) {
                 [self logMsg:@"InputStreamError: '%@'", [self.iStream streamError]];
-                
+                return;
             }
-            else if (bytesReceived > 0) {
-                [self.delegate connection:self event:OPConnectionEventDataReceived object:[NSData dataWithBytes:iBuffer length:bytesReceived]];
+            else if (len == 0) {
+                return;
+            }
+            
+            [iBuffer appendBytes:buf length:len];
+            
+            while (iBuffer.length >= sizeof(OPCell)) {
+                OPCell *cell = (OPCell *)iBuffer.bytes;
+                uint16_t cellLen;
+                
+                if ([self isVariableLenCellOfCommand:cell->command]) {
+                    if (iBuffer.length < sizeof(OPCell) + sizeof(OPCellPayload)) {
+                        return;
+                    }
+                    OPCellPayload *payload = (OPCellPayload *)cell->payload;
+                    cellLen = sizeof(OPCell) + sizeof(OPCellPayload) + CFSwapInt16BigToHost(payload->length);
+                }
+                else {
+                    cellLen = sizeof(OPCell) + OPCellPayloadLen;
+                }
+                
+                if (iBuffer.length < cellLen) {
+                    return;
+                }
+
+                if (cell->command == OPConnectionCommandVersions) {
+                    if (self.protocolVersion != OPConnectionProtocolVersionUnknown) {
+                        [self logMsg:@"Unexpected Versions cell received. Disconnecting."];
+                        [self disconnect];
+                        return;
+                    }
+                    
+                    OPCellPayload *payload = (OPCellPayload *)cell->payload;
+                    uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
+
+                    if (dataLen % 2 != 0) {
+                        [self disconnect];
+                        return;
+                    }
+                    
+                    uint16_t *serverVersions = (uint16_t *)payload->data;
+                    for (int i = 0; i < dataLen / 2; i++) {
+                        uint16_t serverVersion = CFSwapInt16BigToHost(serverVersions[i]);
+                        if (serverVersion == OPConnectionProtocolVersionV3 && self.protocolVersion < OPConnectionProtocolVersionV3) {
+                            self.protocolVersion = OPConnectionProtocolVersionV3;
+                        }
+                        else if (serverVersion == OPConnectionProtocolVersionV2 && self.protocolVersion < OPConnectionProtocolVersionV2) {
+                            self.protocolVersion = OPConnectionProtocolVersionV2;
+                        }
+                    }
+                    
+                    if (self.protocolVersion == OPConnectionProtocolVersionUnknown) {
+                        [self logMsg:@"Failed to negotiate protocol version"];
+                        [self.delegate connection:self onEvent:OPConnectionEventConnectionFailed];
+                        [self disconnect];
+                        return;
+                    }
+                    else {
+                        [self.delegate connection:self onEvent:OPConnectionEventConnected];
+                    }
+                }
+                else {
+                    if ([self isVariableLenCellOfCommand:cell->command]) {
+                        OPCellPayload *payload = (OPCellPayload *)cell->payload;
+                        uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
+                        [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:payload->data length:dataLen]];
+                    }
+                    else {
+                        [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:cell->payload length:OPCellPayloadLen]];
+                    }
+                }
+                
+                [iBuffer replaceBytesInRange:NSMakeRange(0, cellLen) withBytes:NULL length:0];
             }
         } break;
             
@@ -312,10 +462,16 @@ NSUInteger const cellSizeMax = 512;
         _isConnected = NO;
         self.delegate = NULL;
         
-        self.handshakeType = OPConnectionHandshkeUndefined;
+        _circuitID = 0;
+        
+        self.handshakeType = OPConnectionHandshkeUnknown;
+        self.protocolVersion = OPConnectionProtocolVersionUnknown;
         
         oBuffer = [[NSMutableArray alloc] init];
         bytesSent = 0;
+        
+        iBuffer = [[NSMutableData alloc] initWithCapacity:OPCellSizeMax];
+        bytesReceived = 0;
         
         self.isRunning = YES;
         connectionThread = [[NSThread alloc] initWithTarget:self selector:@selector(run) object:NULL];
@@ -328,6 +484,7 @@ NSUInteger const cellSizeMax = 512;
     [connectionThread release];
     
     [oBuffer release];
+    [iBuffer release];
     
     [super dealloc];
 }

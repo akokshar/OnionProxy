@@ -24,6 +24,7 @@
 		341C447418A6355D002018E1 /* OPConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = 341C447318A6355D002018E1 /* OPConfig.plist */; };
 		34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3918C24ABE00C75B92 /* OPConsensus.m */; };
 		34224B3D18C3C04300C75B92 /* OPObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 34224B3C18C3C04300C75B92 /* OPObject.m */; };
+		3427594318FAF0DA005308D4 /* OPCertificate.m in Sources */ = {isa = PBXBuildFile; fileRef = 3427594218FAF0DA005308D4 /* OPCertificate.m */; };
 		344B294C18DE18B900C463AA /* OPCircuit.m in Sources */ = {isa = PBXBuildFile; fileRef = 344B294B18DE18B900C463AA /* OPCircuit.m */; };
 		3450744F18C921C600868069 /* OPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPConnection.m */; };
 		34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */; };
@@ -82,6 +83,8 @@
 		34224B3918C24ABE00C75B92 /* OPConsensus.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConsensus.m; sourceTree = "<group>"; };
 		34224B3B18C3C04300C75B92 /* OPObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPObject.h; sourceTree = "<group>"; };
 		34224B3C18C3C04300C75B92 /* OPObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPObject.m; sourceTree = "<group>"; };
+		3427594118FAF0DA005308D4 /* OPCertificate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCertificate.h; sourceTree = "<group>"; };
+		3427594218FAF0DA005308D4 /* OPCertificate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCertificate.m; sourceTree = "<group>"; };
 		344B294A18DE18B900C463AA /* OPCircuit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCircuit.h; sourceTree = "<group>"; };
 		344B294B18DE18B900C463AA /* OPCircuit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCircuit.m; sourceTree = "<group>"; };
 		3450744D18C921C600868069 /* OPConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPConnection.h; sourceTree = "<group>"; };
@@ -273,6 +276,8 @@
 				34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */,
 				34EE82EC18F332EF00992506 /* OPEllipticCurveDH.h */,
 				34EE82ED18F332EF00992506 /* OPEllipticCurveDH.m */,
+				3427594118FAF0DA005308D4 /* OPCertificate.h */,
+				3427594218FAF0DA005308D4 /* OPCertificate.m */,
 			);
 			name = Security;
 			sourceTree = "<group>";
@@ -396,6 +401,7 @@
 				34FE94B618E327FA0037CFCF /* OPSimmetricKey.m in Sources */,
 				34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */,
 				34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */,
+				3427594318FAF0DA005308D4 /* OPCertificate.m in Sources */,
 				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
 				34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */,
 				34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */,
