@@ -70,15 +70,15 @@ uint8_t const dhKeyAgreementBytes[] = ""
         }
         
         rc = CSSM_GenerateKeyPair(ccHandle,
-                                    CSSM_KEYUSE_DERIVE,		// only legal use of a Diffie-Hellman key
-                                    CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
-                                    NULL,
-                                    &public,                // public
-                                    CSSM_KEYUSE_DERIVE,
-                                    CSSM_KEYATTR_RETURN_REF,
-                                    NULL,				// same labels
-                                    NULL,				// CredAndAclEntry
-                                    &private);                //private
+                                  CSSM_KEYUSE_DERIVE,
+                                  CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
+                                  NULL,
+                                  &public,
+                                  CSSM_KEYUSE_DERIVE,
+                                  CSSM_KEYATTR_RETURN_REF,
+                                  NULL,
+                                  NULL,
+                                  &private);
         if (rc) {
             CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
             [self logMsg:@"CSSM_GenerateKeyPair failed '%@'", errorMsg];

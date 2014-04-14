@@ -12,7 +12,9 @@
     
 }
 
+/// data to be sent to remote peer
 @property (readonly, getter = getEData) NSData *EData;
+
 @property (readonly) NSData *keyData;
 
 @end

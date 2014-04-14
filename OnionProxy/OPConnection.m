@@ -65,6 +65,7 @@ typedef struct {
 @property (retain) NSInputStream *iStream;
 @property (assign) OPConnectionHandshakeType handshakeType;
 @property (assign) OPConnectionProtocolVersion protocolVersion;
+@property (retain) NSArray *tlsCertificates;
 
 - (void) doConnectWithParams:(NSDictionary *)params;
 - (void) startThread;
@@ -73,8 +74,9 @@ typedef struct {
 - (void) stopThread;
 - (void) doDisconnect;
 
-+ (uint16_t) generateCircuitID;
-- (BOOL) isVariableLenCellOfCommand:(OPConnectionCommand)command;
+- (uint16_t) generateCircuitID;
+- (BOOL) isVariableLenCellWithCommand:(OPConnectionCommand)command;
+- (void) queueCellWithCommand:(OPConnectionCommand)command andData:(NSData *)data;
 
 @end
 
@@ -86,41 +88,14 @@ typedef struct {
 
 - (uint16_t) getCircuitID {
     if (_circuitID == 0) {
-        _circuitID = [OPConnection generateCircuitID];
+        _circuitID = [self generateCircuitID];
     }
     return _circuitID;
 }
 
-+ (uint16_t) generateCircuitID {
+- (uint16_t) generateCircuitID {
     static uint16_t lastID = 0;
     return lastID + arc4random() % 13;
-}
-
-- (BOOL) isVariableLenCellOfCommand:(OPConnectionCommand)command {
-    switch (self.protocolVersion) {
-        case OPConnectionProtocolVersionV3: {
-            if (command == OPConnectionCommandVersions || command >= 128) {
-                return YES;
-            }
-        } break;
-
-        case OPConnectionProtocolVersionV2: {
-            if (command == OPConnectionCommandVersions) {
-                return YES;
-            }
-        } break;
-
-        case OPConnectionProtocolVersionV1: {
-            return NO;
-        }
-            
-        case OPConnectionProtocolVersionUnknown: {
-            if (command == OPConnectionCommandVersions || command >= 128) {
-                return YES;
-            }
-        }
-    }
-    return NO;
 }
 
 - (BOOL) connectToIp:(NSString *)ip port:(NSUInteger)port {
@@ -131,7 +106,7 @@ typedef struct {
                                     ip, connectionIpKey,
                                     [NSNumber numberWithInteger:port], connectionPortKey, nil];
             
-            [self startThread]; //TODO: this must be causing Spinlock in Run method. Rework this later
+            [self startThread]; //TODO: this must be causing Spinlock in Run method. Rework this later (remove Port from runloop)
             [self performSelector:@selector(doConnectWithParams:) onThread:connectionThread withObject:params waitUntilDone:YES];
             
             if (!self.isConnected) {
@@ -171,7 +146,7 @@ typedef struct {
     
     NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
                               [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
-                              [NSNumber numberWithBool:YES],  kCFStreamSSLValidatesCertificateChain,
+                              [NSNumber numberWithBool:YES], kCFStreamSSLValidatesCertificateChain,
                               kCFNull, kCFStreamSSLPeerName,
                               nil];
     
@@ -248,7 +223,58 @@ typedef struct {
     }
 }
 
-- (void) sendData:(NSData *)data {
+- (BOOL) isVariableLenCellWithCommand:(OPConnectionCommand)command {
+    switch (self.protocolVersion) {
+        case OPConnectionProtocolVersionV3: {
+            if (command == OPConnectionCommandVersions || command >= 128) {
+                return YES;
+            }
+        } break;
+            
+        case OPConnectionProtocolVersionV2: {
+            if (command == OPConnectionCommandVersions) {
+                return YES;
+            }
+        } break;
+            
+        case OPConnectionProtocolVersionV1: {
+            return NO;
+        }
+            
+        case OPConnectionProtocolVersionUnknown: {
+            if (command == OPConnectionCommandVersions || command >= 128) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
+- (void) queueCellWithCommand:(OPConnectionCommand)command andData:(NSData *)data {
+    NSMutableData *cell = [[NSMutableData alloc] initWithCapacity:sizeof(OPCell) + sizeof(OPCellPayload) + data.length];
+    OPCell header;
+    header.circuitID = CFSwapInt16HostToBig(self.circuitID);
+    header.command = command;
+    [cell appendBytes:&header length:sizeof(OPCell)];
+    
+    if ([self isVariableLenCellWithCommand:command]) {
+        OPCellPayload payload;
+        payload.length = CFSwapInt16HostToBig(data.length);
+        [cell appendBytes:&payload length:sizeof(OPCellPayload)];
+        [cell appendData:data];
+    }
+    else {
+        [cell appendData:data];
+    }
+    
+    @synchronized(self) {
+        [oBuffer addObject:cell];
+    }
+    
+    [cell release];
+}
+
+- (void) sendCommand:(OPConnectionCommand)command withData:(NSData *)data; {
     if (data == NULL || self.isConnected == NO) {
         return;
     }
@@ -256,34 +282,35 @@ typedef struct {
     if ([data length] == 0) {
         return;
     }
-    
-    [self logMsg:@"Bytes to send %lu", (unsigned long)data.length];
-    
-    @synchronized(self) {
-        [oBuffer addObject:data];
-    }
+
+    [self queueCellWithCommand:command andData:data];
     
     if (oBuffer.count == 1 && bytesSent == 0) {
         if ([self.oStream hasSpaceAvailable]) {
-            bytesSent = [self.oStream write:data.bytes maxLength:data.length];
+            NSData *dataToSend = [oBuffer objectAtIndex:0];
+            bytesSent = [self.oStream write:dataToSend.bytes maxLength:dataToSend.length];
         }
     }
 }
 
 -(void) stream:(NSStream *)stream handleEvent:(NSStreamEvent)streamEvent {
     
-    if (self.handshakeType == OPConnectionHandshkeUnknown) {
-        if (streamEvent == NSStreamEventHasBytesAvailable || streamEvent == NSStreamEventHasSpaceAvailable) {
-            NSArray *certs = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
+    //By the time your stream delegate’s event handler gets called to indicate that there is space available on the socket,
+    //the operating system has already constructed a TLS channel, obtained a certificate chain from the other end of the connection,
+    //and created a trust object to evaluate it
+    if (self.tlsCertificates == NULL) {
+        if (streamEvent == NSStreamEventHasSpaceAvailable) {
+
+            self.tlsCertificates = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
             //[self logMsg:@"%@ number of certs = %lu",[stream class], (unsigned long)[certs count]];
 
-            if (certs.count == 0 || certs.count > 2) {
+            if (self.tlsCertificates.count == 0 || self.tlsCertificates.count > 2) {
                 [self logMsg:@"Initial handshake failed"];
                 [self disconnect];
                 return;
             }
             
-            if (certs.count == 2) {
+            if (self.tlsCertificates.count == 2) {
                 self.handshakeType = OPConnectionHandshkeCertificatesUpFront;
                 self.protocolVersion = OPConnectionProtocolVersionV1;
                 [self logMsg:@"OPConnectionHandshkeV1"];
@@ -291,9 +318,46 @@ typedef struct {
                 return;
             }
             else {
-                // certificate self-signed. NSStream did it for us??
-                self.handshakeType = OPConnectionHandshkeInProtocol;
-                [self logMsg:@"OPConnectionHandshkeV3"];
+                self.handshakeType = OPConnectionHandshkeRenegotiation;
+                
+                //There are additionally a set of constraints on the connection certificate,
+                //which the initiator can use to learn that the in-protocol handshake is in use.
+                //Specifically, at least one of these properties must be true of the certificate:
+                
+                // Is certificate self-signed
+                SecTrustRef trust = (SecTrustRef)[stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerTrust];
+                SecTrustSetAnchorCertificates(trust, (CFArrayRef)self.tlsCertificates);
+                SecTrustResultType result;
+                SecTrustEvaluate(trust, &result);
+                [self logMsg:@"cert evaluation result = %i", result];
+                
+                if (result == kSecTrustResultProceed || result == kSecTrustResultUnspecified) {
+                    self.handshakeType = OPConnectionHandshkeInProtocol;
+                }
+                else {
+                    // Is The certificate's public key modulus is longer than 1024 bits
+                    SecCertificateRef cert = (SecCertificateRef)[self.tlsCertificates objectAtIndex:0];
+                    SecKeyRef pubKey;
+                    SecCertificateCopyPublicKey(cert, &pubKey);
+                    size_t keySize = SecKeyGetBlockSize(pubKey);
+                    if (keySize > 128) {
+                        self.handshakeType = OPConnectionHandshkeInProtocol;
+                    }
+                    CFRelease(pubKey);
+                    
+                    if (self.handshakeType == OPConnectionHandshkeRenegotiation) {
+                        // Some component other than "commonName" is set in the subject or issuer DN of the certificate
+                        //TODO
+                    }
+                    else {
+                        // The commonName of the subject or issuer of the certificate ends with a suffix other than ".net".
+                        //TODO
+                    }
+
+                }
+
+                
+                [self logMsg:@"OPConnectionHandshake=%i", self.handshakeType];
                 
             }
         }
@@ -309,20 +373,7 @@ typedef struct {
                 // In versions higher then v1 (renegotiation and in-protocol) Version Cell have to be send first
                 if (self.protocolVersion != OPConnectionProtocolVersionV1) {
                     uint16_t versions[] = { CFSwapInt16HostToBig(3), CFSwapInt16HostToBig(2) };
-                    size_t cellSize = sizeof(OPCell) + sizeof(OPCellPayload) + sizeof(versions);
-                    
-                    OPCell *versionsCell = malloc(cellSize);
-                    versionsCell->circuitID = self.circuitID;
-                    versionsCell->command = OPConnectionCommandVersions;
-                    
-                    OPCellPayload *payload = (OPCellPayload *) versionsCell->payload;
-                    payload->length = CFSwapInt16HostToBig(sizeof(versions));
-                    memcpy(payload->data, versions, sizeof(versions));
-                    
-                    //[self logMsg:@"Versions Cell data '%@' sizeof %lu", [NSData dataWithBytes:versionsCell length:cellSize], cellSize];
-                    [oBuffer addObject:[NSData dataWithBytes:versionsCell length:cellSize]];
-                    
-                    free(versionsCell);
+                    [self queueCellWithCommand:OPConnectionCommandVersions andData:[NSData dataWithBytes:versions length:sizeof(versions)]];
                 }
             }
             
@@ -374,7 +425,7 @@ typedef struct {
                 OPCell *cell = (OPCell *)iBuffer.bytes;
                 uint16_t cellLen;
                 
-                if ([self isVariableLenCellOfCommand:cell->command]) {
+                if ([self isVariableLenCellWithCommand:cell->command]) {
                     if (iBuffer.length < sizeof(OPCell) + sizeof(OPCellPayload)) {
                         return;
                     }
@@ -426,7 +477,7 @@ typedef struct {
                     }
                 }
                 else {
-                    if ([self isVariableLenCellOfCommand:cell->command]) {
+                    if ([self isVariableLenCellWithCommand:cell->command]) {
                         OPCellPayload *payload = (OPCellPayload *)cell->payload;
                         uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
                         [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:payload->data length:dataLen]];
@@ -467,6 +518,8 @@ typedef struct {
         self.handshakeType = OPConnectionHandshkeUnknown;
         self.protocolVersion = OPConnectionProtocolVersionUnknown;
         
+        self.tlsCertificates = NULL;
+        
         oBuffer = [[NSMutableArray alloc] init];
         bytesSent = 0;
         
@@ -482,6 +535,8 @@ typedef struct {
 - (void) dealloc {
     [self disconnect];
     [connectionThread release];
+    
+    self.tlsCertificates = NULL;
     
     [oBuffer release];
     [iBuffer release];

@@ -65,6 +65,8 @@ typedef enum {
 @property (readonly) OPConnectionHandshakeType handshakeType;
 @property (readonly) OPConnectionProtocolVersion protocolVersion;
 @property (readonly) BOOL isConnected;
+@property (readonly) NSArray *tlsCertificates;
+
 @property (retain) id <OPConnectionDelegate> delegate;
 
 - (id) init;
@@ -72,6 +74,6 @@ typedef enum {
 - (BOOL) connectToIp:(NSString *)ip port:(NSUInteger)port;
 - (void) disconnect;
 
-- (void) sendData:(NSData *)data;
+- (void) sendCommand:(OPConnectionCommand)command withData:(NSData *)data;
 
 @end
