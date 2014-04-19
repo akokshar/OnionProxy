@@ -31,6 +31,29 @@ typedef struct {
 } OPCellPayload;
 #pragma pack()
 
+#pragma pack(1)
+typedef struct {
+    uint8_t certsCount;
+    uint8_t certsData[];
+} OPCerts;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct {
+    uint8_t certType;
+    uint16_t certLen;
+    uint8_t certData[];
+} OPCert;
+#pragma pack()
+
+#pragma pack(1)
+typedef struct {
+    uint8_t type;
+    uint8_t length;
+    uint8_t value[];
+} OPTlv;
+#pragma pack()
+
 //// Fixed-length cell
 //uint8_t const commandCellPadding = 0;   //(Padding)                 (See Sec 7.2)
 //uint8_t const commandCellCreate = 1;    //(Create a circuit)        (See Sec 5.1)
@@ -60,12 +83,13 @@ typedef struct {
     NSUInteger bytesReceived;
 }
 
+@property (retain) OPTorNode *node;
+
 @property (atomic) BOOL isRunning;
 @property (retain) NSOutputStream *oStream;
 @property (retain) NSInputStream *iStream;
 @property (assign) OPConnectionHandshakeType handshakeType;
 @property (assign) OPConnectionProtocolVersion protocolVersion;
-@property (retain) NSArray *tlsCertificates;
 
 - (void) doConnectWithParams:(NSDictionary *)params;
 - (void) startThread;
@@ -77,6 +101,7 @@ typedef struct {
 - (uint16_t) generateCircuitID;
 - (BOOL) isVariableLenCellWithCommand:(OPConnectionCommand)command;
 - (void) queueCellWithCommand:(OPConnectionCommand)command andData:(NSData *)data;
+- (void) processCell:(OPCell *)cell;
 
 @end
 
@@ -119,6 +144,10 @@ typedef struct {
     return self.isConnected;
 }
 
+- (BOOL) connectToNode:(OPTorNode *)node {
+    return false;
+}
+
 - (void) doConnectWithParams:(NSDictionary *)params {
     NSInputStream *iStream = nil;
     NSOutputStream *oStream = nil;
@@ -146,12 +175,14 @@ typedef struct {
     
     NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
                               [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
-                              [NSNumber numberWithBool:YES], kCFStreamSSLValidatesCertificateChain,
+                              [NSNumber numberWithBool:NO], kCFStreamSSLValidatesCertificateChain,
                               kCFNull, kCFStreamSSLPeerName,
                               nil];
     
     CFReadStreamSetProperty((CFReadStreamRef)iStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
     CFWriteStreamSetProperty((CFWriteStreamRef)oStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
+    
+    [settings release];
     
     [iStream setDelegate:self];
     [oStream setDelegate:self];
@@ -166,6 +197,7 @@ typedef struct {
 }
 
 - (void) startThread {
+    self.isRunning = YES;
     [connectionThread start];
 }
 
@@ -177,7 +209,7 @@ typedef struct {
     self.isRunning = YES;
     
     NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
-    [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
+    [runLoop addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode]; // to replace with keepalive timer
     while (self.isRunning && [runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
     
     [pool release];
@@ -274,7 +306,7 @@ typedef struct {
     [cell release];
 }
 
-- (void) sendCommand:(OPConnectionCommand)command withData:(NSData *)data; {
+- (void) sendCommand:(OPConnectionCommand)command withData:(NSData *)data {
     if (data == NULL || self.isConnected == NO) {
         return;
     }
@@ -293,24 +325,28 @@ typedef struct {
     }
 }
 
+NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
+
 -(void) stream:(NSStream *)stream handleEvent:(NSStreamEvent)streamEvent {
     
     //By the time your stream delegate’s event handler gets called to indicate that there is space available on the socket,
     //the operating system has already constructed a TLS channel, obtained a certificate chain from the other end of the connection,
     //and created a trust object to evaluate it
-    if (self.tlsCertificates == NULL) {
-        if (streamEvent == NSStreamEventHasSpaceAvailable) {
-
-            self.tlsCertificates = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
+    if (streamEvent == NSStreamEventHasSpaceAvailable) {
+        NSNumber *isCerificateChecked = [stream propertyForKey: isCerificateCheckedKey];
+        if (!isCerificateChecked || ![isCerificateChecked boolValue]) {
+            [stream setProperty: [NSNumber numberWithBool: YES] forKey: isCerificateCheckedKey];
+        
+            NSArray *certs = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
             //[self logMsg:@"%@ number of certs = %lu",[stream class], (unsigned long)[certs count]];
 
-            if (self.tlsCertificates.count == 0 || self.tlsCertificates.count > 2) {
+            if (certs.count == 0 || certs.count > 2) {
                 [self logMsg:@"Initial handshake failed"];
                 [self disconnect];
                 return;
             }
             
-            if (self.tlsCertificates.count == 2) {
+            if (certs.count == 2) {
                 self.handshakeType = OPConnectionHandshkeCertificatesUpFront;
                 self.protocolVersion = OPConnectionProtocolVersionV1;
                 [self logMsg:@"OPConnectionHandshkeV1"];
@@ -326,7 +362,7 @@ typedef struct {
                 
                 // Is certificate self-signed
                 SecTrustRef trust = (SecTrustRef)[stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerTrust];
-                SecTrustSetAnchorCertificates(trust, (CFArrayRef)self.tlsCertificates);
+                SecTrustSetAnchorCertificates(trust, (CFArrayRef)certs);
                 SecTrustResultType result;
                 SecTrustEvaluate(trust, &result);
                 [self logMsg:@"cert evaluation result = %i", result];
@@ -336,7 +372,7 @@ typedef struct {
                 }
                 else {
                     // Is The certificate's public key modulus is longer than 1024 bits
-                    SecCertificateRef cert = (SecCertificateRef)[self.tlsCertificates objectAtIndex:0];
+                    SecCertificateRef cert = (SecCertificateRef)[certs objectAtIndex:0];
                     SecKeyRef pubKey;
                     SecCertificateCopyPublicKey(cert, &pubKey);
                     size_t keySize = SecKeyGetBlockSize(pubKey);
@@ -356,7 +392,6 @@ typedef struct {
 
                 }
 
-                
                 [self logMsg:@"OPConnectionHandshake=%i", self.handshakeType];
                 
             }
@@ -439,53 +474,8 @@ typedef struct {
                 if (iBuffer.length < cellLen) {
                     return;
                 }
-
-                if (cell->command == OPConnectionCommandVersions) {
-                    if (self.protocolVersion != OPConnectionProtocolVersionUnknown) {
-                        [self logMsg:@"Unexpected Versions cell received. Disconnecting."];
-                        [self disconnect];
-                        return;
-                    }
-                    
-                    OPCellPayload *payload = (OPCellPayload *)cell->payload;
-                    uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
-
-                    if (dataLen % 2 != 0) {
-                        [self disconnect];
-                        return;
-                    }
-                    
-                    uint16_t *serverVersions = (uint16_t *)payload->data;
-                    for (int i = 0; i < dataLen / 2; i++) {
-                        uint16_t serverVersion = CFSwapInt16BigToHost(serverVersions[i]);
-                        if (serverVersion == OPConnectionProtocolVersionV3 && self.protocolVersion < OPConnectionProtocolVersionV3) {
-                            self.protocolVersion = OPConnectionProtocolVersionV3;
-                        }
-                        else if (serverVersion == OPConnectionProtocolVersionV2 && self.protocolVersion < OPConnectionProtocolVersionV2) {
-                            self.protocolVersion = OPConnectionProtocolVersionV2;
-                        }
-                    }
-                    
-                    if (self.protocolVersion == OPConnectionProtocolVersionUnknown) {
-                        [self logMsg:@"Failed to negotiate protocol version"];
-                        [self.delegate connection:self onEvent:OPConnectionEventConnectionFailed];
-                        [self disconnect];
-                        return;
-                    }
-                    else {
-                        [self.delegate connection:self onEvent:OPConnectionEventConnected];
-                    }
-                }
-                else {
-                    if ([self isVariableLenCellWithCommand:cell->command]) {
-                        OPCellPayload *payload = (OPCellPayload *)cell->payload;
-                        uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
-                        [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:payload->data length:dataLen]];
-                    }
-                    else {
-                        [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:cell->payload length:OPCellPayloadLen]];
-                    }
-                }
+                
+                [self processCell:cell];
                 
                 [iBuffer replaceBytesInRange:NSMakeRange(0, cellLen) withBytes:NULL length:0];
             }
@@ -507,6 +497,195 @@ typedef struct {
     }
 }
 
+- (void) processCell:(OPCell *)cell {
+    if (cell->command == OPConnectionCommandNetInfo) {
+        
+        //                    Timestamp              [4 bytes]
+        //                    Other OR's address     [variable]
+        //                    Number of addresses    [1 byte]
+        //                    This OR's addresses    [variable]
+        
+        uint8_t *data = cell->payload;
+        int pos = 0;
+        
+        uint32_t timestamp;
+        memcpy((uint8_t *)&timestamp, data, sizeof(uint32_t));
+        timestamp = CFSwapInt32BigToHost(timestamp);
+        
+        pos += sizeof(uint32_t);
+        OPTlv *otherAddr = (OPTlv *)(data + pos);
+        pos += sizeof(OPTlv) + otherAddr->length;
+        
+        [self logMsg:@"Other Addr type = %i", otherAddr->type];
+        [self logMsg:@"Other Addr len = %i", otherAddr->length];
+        NSData *otherAddrData = [NSData dataWithBytes:otherAddr->value length:otherAddr->length];
+        [self logMsg:@"Other Addr Valye = %@", otherAddrData];
+        
+        uint8_t numOfAddr = (data + pos)[0];
+        [self logMsg:@"Other Addr type = %i", numOfAddr];
+        
+        pos += 1;
+        
+        OPTlv *thisAddr = NULL;
+        
+        for (int i = 0; i < numOfAddr && pos < OPCellPayloadLen - sizeof(OPTlv); i++) {
+            OPTlv *addr = (OPTlv *)(data + pos);
+            pos += sizeof(OPTlv) + addr->length;
+            
+            if (pos > OPCellPayloadLen) {
+                [self logMsg:@"Malformed NetInfo Cell"];
+                [self disconnect];
+                return;
+            }
+            
+            if (thisAddr == NULL) {
+                thisAddr = addr;
+            }
+            
+            [self logMsg:@"Other Addr type = %i", addr->type];
+            [self logMsg:@"Other Addr len = %i", addr->length];
+            NSData *addrData = [NSData dataWithBytes:addr->value length:addr->length];
+            [self logMsg:@"Other Addr Valye = %@", addrData];
+        }
+        
+        NSMutableData *netInfo = [[NSMutableData alloc] init];
+        
+        timestamp = (uint32_t) [[NSDate date] timeIntervalSince1970];
+        timestamp = CFSwapInt32HostToBig(timestamp);
+        [netInfo appendBytes:&timestamp length:sizeof(uint32_t)];
+        
+        [netInfo appendBytes:thisAddr length:sizeof(OPTlv) + thisAddr->length];
+        
+        numOfAddr = 1;
+        [netInfo appendBytes:&numOfAddr length:sizeof(numOfAddr)];
+        
+        [netInfo appendBytes:otherAddr length:sizeof(OPTlv) + otherAddr->length];
+        
+        [netInfo setLength:OPCellPayloadLen];
+        
+        [self sendCommand:OPConnectionCommandNetInfo withData:netInfo];
+        
+        [netInfo release];
+    }
+    
+    else if (cell->command == OPConnectionCommandAuthChallenge) {
+        
+    }
+    
+    else if (cell->command == OPConnectionCommandCerts) {
+        OPCellPayload *payload = (OPCellPayload *)cell->payload;
+        uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
+        
+        if (dataLen < sizeof(OPCerts)) {
+            [self logMsg:@"Malformed Certs Cell (1)"];
+            [self disconnect];
+            return;
+        }
+        
+        OPCerts *certs = (OPCerts *)payload->data;
+        if (certs->certsCount != 2) {
+            [self logMsg:@"Malformed Certs Cell (2)"];
+            [self disconnect];
+            return;
+        }
+        
+        dataLen -= sizeof(OPCerts);
+        if (dataLen < sizeof(OPCert)) {
+            [self logMsg:@"Malformed Certs Cell (3)"];
+            [self disconnect];
+            return;
+        }
+        
+        OPCert *cert1 = (OPCert *)certs->certsData;
+        uint16_t cert1Len = CFSwapInt16BigToHost(cert1->certLen);
+        
+        dataLen -= sizeof(OPCert);
+        if (dataLen < cert1Len) {
+            [self logMsg:@"Malformed Certs Cell (4)"];
+            [self disconnect];
+            return;
+        }
+        
+        dataLen -= cert1Len;
+        if (dataLen < sizeof(OPCert)) {
+            [self logMsg:@"Malformed Certs Cell (5)"];
+            [self disconnect];
+            return;
+        }
+        
+        OPCert *cert2 = (OPCert *)(certs->certsData + sizeof(OPCert) + cert1Len);
+        uint16_t cert2Len = CFSwapInt16BigToHost(cert2->certLen);
+        
+        if (dataLen < cert2Len) {
+            [self logMsg:@"Malformed Certs Cell (6)"];
+            [self disconnect];
+            return;
+        }
+        
+        if ((cert1->certType == 1 && cert2->certType != 2) || (cert1->certType == 2 && cert2->certType != 1)) {
+            [self logMsg:@"Malformed Certs Cell (7)"];
+            [self disconnect];
+            return;
+        }
+        
+        NSData *cert1Data = [[NSData alloc] initWithBytes:cert1->certData length:cert1Len];
+        NSData *cert2Data = [[NSData alloc] initWithBytes:cert2->certData length:cert2Len];
+        
+        SecCertificateRef secCertificate1 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
+        SecCertificateRef secCertificate2 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
+        
+        [cert1Data release];
+        [cert2Data release];
+    }
+    
+    else if (cell->command == OPConnectionCommandVersions) {
+        if (self.protocolVersion != OPConnectionProtocolVersionUnknown) {
+            [self logMsg:@"Unexpected Versions cell received. Disconnecting."];
+            [self disconnect];
+            return;
+        }
+        
+        OPCellPayload *payload = (OPCellPayload *)cell->payload;
+        uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
+        
+        if (dataLen % 2 != 0) {
+            [self disconnect];
+            return;
+        }
+        
+        uint16_t *serverVersions = (uint16_t *)payload->data;
+        for (int i = 0; i < dataLen / 2; i++) {
+            uint16_t serverVersion = CFSwapInt16BigToHost(serverVersions[i]);
+            if (serverVersion == OPConnectionProtocolVersionV3 && self.protocolVersion < OPConnectionProtocolVersionV3) {
+                self.protocolVersion = OPConnectionProtocolVersionV3;
+            }
+            else if (serverVersion == OPConnectionProtocolVersionV2 && self.protocolVersion < OPConnectionProtocolVersionV2) {
+                self.protocolVersion = OPConnectionProtocolVersionV2;
+            }
+        }
+        
+        if (self.protocolVersion == OPConnectionProtocolVersionUnknown) {
+            [self logMsg:@"Failed to negotiate protocol version"];
+            [self.delegate connection:self onEvent:OPConnectionEventConnectionFailed];
+            [self disconnect];
+            return;
+        }
+        else {
+            [self.delegate connection:self onEvent:OPConnectionEventConnected];
+        }
+    }
+    else {
+        if ([self isVariableLenCellWithCommand:cell->command]) {
+            OPCellPayload *payload = (OPCellPayload *)cell->payload;
+            uint16_t dataLen = CFSwapInt16BigToHost(payload->length);
+            [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:payload->data length:dataLen]];
+        }
+        else {
+            [self.delegate connection:self onCommand:cell->command withData:[NSData dataWithBytes:cell->payload length:OPCellPayloadLen]];
+        }
+    }
+}
+
 - (id) init {
     self = [super init];
     if (self) {
@@ -518,15 +697,13 @@ typedef struct {
         self.handshakeType = OPConnectionHandshkeUnknown;
         self.protocolVersion = OPConnectionProtocolVersionUnknown;
         
-        self.tlsCertificates = NULL;
-        
         oBuffer = [[NSMutableArray alloc] init];
         bytesSent = 0;
         
         iBuffer = [[NSMutableData alloc] initWithCapacity:OPCellSizeMax];
         bytesReceived = 0;
         
-        self.isRunning = YES;
+        self.isRunning = NO;
         connectionThread = [[NSThread alloc] initWithTarget:self selector:@selector(run) object:NULL];
     }
     return self;
@@ -536,10 +713,10 @@ typedef struct {
     [self disconnect];
     [connectionThread release];
     
-    self.tlsCertificates = NULL;
-    
     [oBuffer release];
     [iBuffer release];
+    
+    self.node = NULL;
     
     [super dealloc];
 }
