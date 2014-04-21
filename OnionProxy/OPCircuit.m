@@ -53,6 +53,46 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
     switch (event) {
         case OPConnectionEventConnected: {
             [self logMsg:@"OPConnectionEventConnected"];
+            
+            // Connected to the first node.
+            // CREATEv1 Cell payload is as this:
+            //      TAP handshake
+            //            PK-encrypted:
+            //              Padding                       [PK_PAD_LEN bytes]
+            //              Symmetric key                 [KEY_LEN bytes]
+            //              First part of g^x             [PK_ENC_LEN-PK_PAD_LEN-KEY_LEN bytes]
+            //              Symmetrically encrypted:
+            //                  Second part of g^x            [DH_LEN-(PK_ENC_LEN-PK_PAD_LEN-KEY_LEN) bytes]
+            //
+            
+            OPTorNode *node = [[nodes objectAtIndex:0] objectForKey:circuitNodeKey];
+            
+            [self logMsg:@"Ready to send CREATE Cell"];
+            
+            OPDiffieHellman *dh = [[OPDiffieHellman alloc] init];
+            //[self logMsg:@"E=%@", [self hexStringFromData:dh.EData]];
+            
+            OPSimmetricKey *simmetricKey = [[OPSimmetricKey alloc] initWithLength:16];
+            //[self logMsg:@"Symmetric key=%@", [self hexStringFromData:simmetricKey.keyData]];
+            
+            NSMutableData *payloadPart1Clear = [NSMutableData dataWithCapacity:simmetricKey.keyData.length + 70];
+            [payloadPart1Clear appendData:simmetricKey.keyData];
+            [payloadPart1Clear appendBytes:dh.AData.bytes length:70];
+            NSMutableData *payloadPart2Clear = [NSMutableData dataWithBytes:dh.AData.bytes + 70 length:dh.AData.length - 70];
+            
+            NSData *payload1 = [node.onionKey encryptData:payloadPart1Clear];
+            NSData *payload2 = [simmetricKey encryptData:payloadPart2Clear];
+            
+            NSMutableData *packet = [NSMutableData data];
+            [packet appendData:payload1];
+            [packet appendData:payload2];
+            
+            [self logMsg:@"Sending Create circuit request: %lu bytes", (unsigned long)packet.length];
+            [sender sendCommand:OPConnectionCommandCreate withData:packet];
+            
+            [simmetricKey release];
+            [dh release];
+
         } break;
         
         case OPConnectionEventConnectionFailed: {
@@ -81,7 +121,7 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
     OPTorNode *entryNode = [OPConsensus consensus].randomRouterNode;
     if (entryNode) {
         [self addNode:entryNode];
-        [connection connectToIp:entryNode.ip port:entryNode.orPort];
+        [connection connectToNode:entryNode];
         [self logMsg:@"Entry node onionKey %@", entryNode.onionKey];
         return;
     }

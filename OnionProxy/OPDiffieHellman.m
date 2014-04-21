@@ -12,6 +12,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
+extern OSStatus SecKeyCreateWithCSSMKey(const CSSM_KEY *key, SecKeyRef* keyRef) WEAK_IMPORT_ATTRIBUTE;
+
 //30 81 95
 //06 09 2A 86 48 86 F7 0D 01 03 01
 //30 81 87
@@ -40,70 +42,131 @@ uint8_t const dhKeyAgreementBytes[] = ""
                         "\x04\x00";
 
 @interface OPDiffieHellman() {
-    CSSM_KEY private;
-    CSSM_KEY public;
+    CSSM_KEY aPrivate;
+    CSSM_KEY aPublic;
 }
+
+@property (assign, getter = getAData) NSData *AData;
 
 @end
 
 @implementation OPDiffieHellman
 
-@synthesize EData = _EData;
+@synthesize AData = _AData;
 
-- (NSData *) getEData {
+- (NSData *) getAData {
     @synchronized(self) {
-        if (_EData) {
-            return _EData;
-        }
-        
-        CSSM_DATA dhKeyAgreement;
-        dhKeyAgreement.Data = (void *)dhKeyAgreementBytes;
-        dhKeyAgreement.Length = sizeof(dhKeyAgreementBytes);
-        
-        CSSM_RETURN rc;
-        CSSM_CC_HANDLE ccHandle;
-        rc = CSSM_CSP_CreateKeyGenContext([OPCSP instance].handle, CSSM_ALGID_DH, 1024, NULL, NULL, NULL, NULL, &dhKeyAgreement, &ccHandle);
-        if (rc) {
-            CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
-            [self logMsg:@"CSSM_CSP_CreateKeyGenContext failed '%@'", errorMsg];
-            CFRelease(errorMsg);
-        }
-        
-        rc = CSSM_GenerateKeyPair(ccHandle,
-                                  CSSM_KEYUSE_DERIVE,
-                                  CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
-                                  NULL,
-                                  &public,
-                                  CSSM_KEYUSE_DERIVE,
-                                  CSSM_KEYATTR_RETURN_REF,
-                                  NULL,
-                                  NULL,
-                                  &private);
-        if (rc) {
-            CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
-            [self logMsg:@"CSSM_GenerateKeyPair failed '%@'", errorMsg];
-            CFRelease(errorMsg);
-        }
+        if (_AData == NULL) {
+            CSSM_CC_HANDLE ccHandle;
+            CSSM_DATA dhKeyAgreement;
+            dhKeyAgreement.Data = (void *)dhKeyAgreementBytes;
+            dhKeyAgreement.Length = sizeof(dhKeyAgreementBytes);
+            
+            CSSM_RETURN rc;
+            rc = CSSM_CSP_CreateKeyGenContext([OPCSP instance].handle, CSSM_ALGID_DH, 1024, NULL, NULL, NULL, NULL, &dhKeyAgreement, &ccHandle);
+            if (rc) {
+                CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+                [self logMsg:@"CSSM_CSP_CreateKeyGenContext failed '%@'", errorMsg];
+                CFRelease(errorMsg);
+                return NULL;
+            }
+            
+            rc = CSSM_GenerateKeyPair(ccHandle,
+                                      CSSM_KEYUSE_DERIVE,
+                                      CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
+                                      NULL,
+                                      &aPublic,
+                                      CSSM_KEYUSE_DERIVE,
+                                      CSSM_KEYATTR_RETURN_REF,
+                                      NULL,
+                                      NULL,
+                                      &aPrivate);
+            if (rc) {
+                CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+                [self logMsg:@"CSSM_GenerateKeyPair failed '%@'", errorMsg];
+                CFRelease(errorMsg);
+                return NULL;
+            }
 
-        CSSM_DeleteContext(ccHandle);
-        
-        return [NSData dataWithBytes:public.KeyData.Data length:public.KeyData.Length];
+            _AData = [NSData dataWithBytes:aPublic.KeyData.Data length:aPublic.KeyData.Length];
+            
+            CSSM_DeleteContext(ccHandle);
+        }
      }
+    
+    return _AData;
+}
+
+- (SecKeyRef) createKeyWithBData:(NSData *)BData {
+    CSSM_CC_HANDLE ccHandle;
+    CSSM_ACCESS_CREDENTIALS creds;
+    CSSM_RETURN rc;
+    
+    memset(&creds, 0, sizeof(CSSM_ACCESS_CREDENTIALS));
+    
+    rc = CSSM_CSP_CreateDeriveKeyContext([OPCSP instance].handle,
+                                           CSSM_ALGID_DH,
+                                           CSSM_ALGID_AES,
+                                           1024,
+                                           &creds,
+                                           &aPrivate,	// BaseKey
+                                           0,			// IterationCount
+                                           0,			// Salt
+                                           0,			// Seed
+                                           &ccHandle);
+	if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_CSP_CreateDeriveKeyContext failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+		return NULL;
+	}
+
+    CSSM_DATA bPublic = { BData.length, (uint8 *)BData.bytes };
+    CSSM_DATA labelData = {8, (uint8 *)"SimmetrikKey"};
+    CSSM_KEY_PTR derivedKey = NULL;
+    memset(derivedKey, 0, sizeof(CSSM_KEY));
+   
+    rc = CSSM_DeriveKey(ccHandle,
+                        &bPublic,
+                        CSSM_KEYUSE_ANY,
+                        CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
+                        &labelData,
+                        NULL,
+                        derivedKey);
+    
+    CSSM_DeleteContext(ccHandle);
+	
+    if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_DeriveKey failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+		return NULL;
+	}
+    
+    SecKeyRef result = NULL;
+    SecKeyCreateWithCSSMKey(derivedKey, &result);
+    
+    CSSM_FreeKey([OPCSP instance].handle,
+                 NULL,
+                 derivedKey,
+                 CSSM_FALSE);
+
+    return result;
 }
 
 - (id) init {
     self = [super init];
     if (self) {
-        _EData = NULL;
-        memset(&private, 0, sizeof(CSSM_KEY));
-        memset(&public, 0, sizeof(CSSM_KEY));
+        memset(&aPrivate, 0, sizeof(CSSM_KEY));
+        memset(&aPublic, 0, sizeof(CSSM_KEY));
+        _AData = NULL;
      }
     return self;
 }
 
 - (void) dealloc {
-    CSSM_FreeKey([OPCSP instance].handle, NULL, &private, CSSM_FALSE);
-    CSSM_FreeKey([OPCSP instance].handle, NULL, &public, CSSM_FALSE);
+    CSSM_FreeKey([OPCSP instance].handle, NULL, &aPrivate, CSSM_FALSE);
+    CSSM_FreeKey([OPCSP instance].handle, NULL, &aPublic, CSSM_FALSE);
     
     [super dealloc];
 }

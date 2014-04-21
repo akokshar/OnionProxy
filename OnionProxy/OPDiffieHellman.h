@@ -13,8 +13,8 @@
 }
 
 /// data to be sent to remote peer
-@property (readonly, getter = getEData) NSData *EData;
+@property (readonly) NSData *AData;
 
-@property (readonly) NSData *keyData;
+- (SecKeyRef) createKeyWithBData:(NSData *)BData;
 
 @end
