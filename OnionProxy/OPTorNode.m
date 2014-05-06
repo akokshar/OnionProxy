@@ -8,6 +8,7 @@
 
 #import "OPTorNode.h"
 #import "OPConfig.h"
+#import "OPSHA1.h"
 #import "OPConsensus.h"
 #import "OPJobDispatcher.h"
 #import "OPResourceDownloader.h"
@@ -125,7 +126,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         NSTextCheckingResult *match = [descriptorMatch objectAtIndex:0];
         NSString *descriptorStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:1]];
         
-        NSData *descriptorDigest = [self sha1DigestOfText:descriptorStr];
+        NSData *descriptorDigest = [OPSHA1 digestOfText:descriptorStr];
         
         if (![self.freshDescriptorDigest isEqualToData:descriptorDigest]) {
             //[self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];

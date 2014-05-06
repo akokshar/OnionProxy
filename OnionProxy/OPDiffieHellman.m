@@ -6,30 +6,36 @@
 //
 //
 
+#define DH_USE_OSSL
+#undef DH_USE_CSSM
+
 #import "OPDiffieHellman.h"
 #import "OPCSP.h"
+
+#ifdef DH_USE_OSSL
+#import <openssl/bn.h>
+#import <openssl/dh.h>
+#endif
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-extern OSStatus SecKeyCreateWithCSSMKey(const CSSM_KEY *key, SecKeyRef* keyRef) WEAK_IMPORT_ATTRIBUTE;
+char const * dhPrimeStr = ""
+          "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E08"
+          "8A67CC74020BBEA63B139B22514A08798E3404DDEF9519B3CD3A431B"
+          "302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9"
+          "A637ED6B0BFF5CB6F406B7EDEE386BFB5A899FA5AE9F24117C4B1FE6"
+          "49286651ECE65381FFFFFFFFFFFFFFFF";
 
-//30 81 95
-//06 09 2A 86 48 86 F7 0D 01 03 01
-//30 81 87
-//02 81 81
-//00 FF FF FF FF FF FF FF FF C9 0F DA A2 21 68 C2 34 C4 C6 62 8B 80 DC 1C D1 29 02 4E 08
-//8A 67 CC 74 02 0B BE A6 3B 13 9B 22 51 4A 08 79 8E 34 04 DD EF 95 19 B3 CD 3A 43 1B
-//30 2B 0A 6D F2 5F 14 37 4F E1 35 6D 6D 51 C2 45 E4 85 B5 76 62 5E 7E C6 F4 4C 42 E9
-//A6 37 ED 6B 0B FF 5C B6 F4 06 B7 ED EE 38 6B FB 5A 89 9F A5 AE 9F 24 11 7C 4B 1F E6
-//49 28 66 51 EC E6 53 81 FF FF FF FF FF FF FF FF
-//02 01 02
-//02 01 7F
+char const * dhGeneratorStr = "02";
+
+int const dhPrivateKeySize = 1024;
+int const dhPrivateKeyLen = 128;
 
 uint8_t const dhKeyAgreementBytes[] = ""
-            "\x30\x81\x99"          // Sequence
+            "\x30\x81\x95"          // Sequence
                 "\x06\x09\x2A\x86\x48\x86\xF7\x0D\x01\x03\x01"      // OID DhKeyAgreement
-                "\x30\x81\x8B"      // Sequence
+                "\x30\x81\x87"      // Sequence
                     "\x02\x81\x81"  // Integer Prime
                         "\x00\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xC9\x0F\xDA\xA2\x21\x68\xC2\x34\xC4\xC6\x62\x8B\x80\xDC\x1C\xD1\x29\x02\x4E\x08"
                         "\x8A\x67\xCC\x74\x02\x0B\xBE\xA6\x3B\x13\x9B\x22\x51\x4A\x08\x79\x8E\x34\x04\xDD\xEF\x95\x19\xB3\xCD\x3A\x43\x1B"
@@ -37,67 +43,161 @@ uint8_t const dhKeyAgreementBytes[] = ""
                         "\xA6\x37\xED\x6B\x0B\xFF\x5C\xB6\xF4\x06\xB7\xED\xEE\x38\x6B\xFB\x5A\x89\x9F\xA5\xAE\x9F\x24\x11\x7C\x4B\x1F\xE6"
                         "\x49\x28\x66\x51\xEC\xE6\x53\x81\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
                     "\x02\x01"          // Integer generator
-                        "\x02"
-                    "\x02\x02"          // Integer privateValueLength
-                        "\x04\x00";
+                        "\x02";
+//                    "\x02\x02"          // Integer privateValueLength
+//                        "\x04\x00";
+
 
 @interface OPDiffieHellman() {
+
     CSSM_KEY aPrivate;
     CSSM_KEY aPublic;
+
+    NSData *requestData;
+    
+    DH *dh;
+    
 }
 
-@property (assign, getter = getAData) NSData *AData;
+- (NSData *) osslGenerateRequest;
+- (NSData *) cssmGenerateRequest;
+
+- (NSData *) osslDeriveSimmetricKeyDataWithResonse:(NSData *)response;
+- (NSData *) cssmDeriveSimmetricKeyDataWithResonse:(NSData *)response;
 
 @end
 
 @implementation OPDiffieHellman
 
-@synthesize AData = _AData;
+@synthesize request;
 
-- (NSData *) getAData {
+- (NSData *) getRequest {
     @synchronized(self) {
-        if (_AData == NULL) {
-            CSSM_CC_HANDLE ccHandle;
-            CSSM_DATA dhKeyAgreement;
-            dhKeyAgreement.Data = (void *)dhKeyAgreementBytes;
-            dhKeyAgreement.Length = sizeof(dhKeyAgreementBytes);
+        if (requestData == NULL) {
             
-            CSSM_RETURN rc;
-            rc = CSSM_CSP_CreateKeyGenContext([OPCSP instance].handle, CSSM_ALGID_DH, 1024, NULL, NULL, NULL, NULL, &dhKeyAgreement, &ccHandle);
-            if (rc) {
-                CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
-                [self logMsg:@"CSSM_CSP_CreateKeyGenContext failed '%@'", errorMsg];
-                CFRelease(errorMsg);
-                return NULL;
-            }
+#ifdef DH_USE_CSSM
+            requestData = [self cssmGenerateRequest];
+#endif
             
-            rc = CSSM_GenerateKeyPair(ccHandle,
-                                      CSSM_KEYUSE_DERIVE,
-                                      CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
-                                      NULL,
-                                      &aPublic,
-                                      CSSM_KEYUSE_DERIVE,
-                                      CSSM_KEYATTR_RETURN_REF,
-                                      NULL,
-                                      NULL,
-                                      &aPrivate);
-            if (rc) {
-                CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
-                [self logMsg:@"CSSM_GenerateKeyPair failed '%@'", errorMsg];
-                CFRelease(errorMsg);
-                return NULL;
-            }
+#ifdef DH_USE_OSSL
+            requestData = [self osslGenerateRequest];
+#endif
 
-            _AData = [NSData dataWithBytes:aPublic.KeyData.Data length:aPublic.KeyData.Length];
-            
-            CSSM_DeleteContext(ccHandle);
         }
-     }
-    
-    return _AData;
+    }
+    return requestData;
 }
 
-- (SecKeyRef) createKeyWithBData:(NSData *)BData {
+- (NSData *) osslGenerateRequest {
+    DH_generate_key(dh);
+    
+    size_t requestLen = BN_num_bytes(dh->pub_key);
+
+    uint8_t requestBytes[requestLen];
+    memset(requestBytes, 0, requestLen);
+
+    BN_bn2bin(dh->pub_key, requestBytes + (128 - requestLen));
+
+    requestData = [[NSData alloc] initWithBytes:requestBytes length:requestLen];
+    
+    return requestData;
+}
+
+- (NSData *) cssmGenerateRequest {
+    CSSM_RETURN rc;
+
+    /*/////
+    //
+    // Test format of key generation parameters
+    //
+    CSSM_CC_HANDLE ccH;
+    rc = CSSM_CSP_CreateKeyGenContext([OPCSP instance].handle, CSSM_ALGID_DH, 1024, NULL, NULL, NULL, NULL, NULL, &ccH);
+    if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_CSP_CreateKeyGenContext failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+    }
+
+    CSSM_DATA par;
+     
+    // this call take a long time
+    rc = CSSM_GenerateAlgorithmParams(ccH, 1024, &par);
+    if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_GenerateAlgorithmParams failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+    }
+
+    [self logMsg:@"PRAMS GENERATED:\n%@", [NSData dataWithBytes:par.Data length:par.Length]];
+
+    CSSM_DeleteContext(ccH);
+    /////*/
+
+    CSSM_CC_HANDLE ccHandle;
+    CSSM_DATA dhKeyAgreement;
+    dhKeyAgreement.Data = (void *)dhKeyAgreementBytes;
+    dhKeyAgreement.Length = sizeof(dhKeyAgreementBytes) - 1;
+
+    rc = CSSM_CSP_CreateKeyGenContext([OPCSP instance].handle, CSSM_ALGID_DH, 1024, NULL, NULL, NULL, NULL, &dhKeyAgreement, &ccHandle);
+    if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_CSP_CreateKeyGenContext failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+        return NULL;
+    }
+
+    rc = CSSM_GenerateKeyPair(ccHandle,
+                              CSSM_KEYUSE_DERIVE,
+                              CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
+                              NULL,
+                              &aPublic,
+                              CSSM_KEYUSE_DERIVE,
+                              CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
+                              NULL,
+                              NULL,
+                              &aPrivate);
+    if (rc) {
+        CFStringRef errorMsg = SecCopyErrorMessageString(rc, NULL);
+        [self logMsg:@"CSSM_GenerateKeyPair failed '%@'", errorMsg];
+        CFRelease(errorMsg);
+        return NULL;
+    }
+
+    //[self logMsg:@"CSSM PRIVATE KEY:\n%@", [NSData dataWithBytes:aPrivate.KeyData.Data length:aPrivate.KeyData.Length]];
+
+    requestData = [[NSData alloc] initWithBytes:aPublic.KeyData.Data length:aPublic.KeyData.Length];
+
+    CSSM_DeleteContext(ccHandle);
+    
+    return requestData;
+}
+
+- (NSData *) deriveSimmetricKeyDataWithResonse:(NSData *)response {
+    
+#ifdef DH_USE_CSSM
+    return [self cssmDeriveSimmetricKeyDataWithResonse:response];
+#endif
+    
+#ifdef DH_USE_OSSL
+    return [self osslDeriveSimmetricKeyDataWithResonse:response];
+#endif
+    
+}
+
+- (NSData *) osslDeriveSimmetricKeyDataWithResonse:(NSData *)response {
+    BIGNUM *rsp = BN_new();
+    NSMutableData *sharedKey = [NSMutableData dataWithLength:dhPrivateKeyLen];
+    
+    BN_bin2bn((unsigned char *)response.bytes, (int)response.length, rsp);
+    DH_compute_key((unsigned char*)sharedKey.mutableBytes, rsp, dh);
+    
+    BN_free(rsp);
+    
+    return sharedKey;
+}
+
+- (NSData *) cssmDeriveSimmetricKeyDataWithResonse:(NSData *)response {
+
     CSSM_CC_HANDLE ccHandle;
     CSSM_ACCESS_CREDENTIALS creds;
     CSSM_RETURN rc;
@@ -106,7 +206,7 @@ uint8_t const dhKeyAgreementBytes[] = ""
     
     rc = CSSM_CSP_CreateDeriveKeyContext([OPCSP instance].handle,
                                            CSSM_ALGID_DH,
-                                           CSSM_ALGID_AES,
+                                           CSSM_ALGID_DH, // not important
                                            1024,
                                            &creds,
                                            &aPrivate,	// BaseKey
@@ -121,10 +221,10 @@ uint8_t const dhKeyAgreementBytes[] = ""
 		return NULL;
 	}
 
-    CSSM_DATA bPublic = { BData.length, (uint8 *)BData.bytes };
-    CSSM_DATA labelData = {8, (uint8 *)"SimmetrikKey"};
-    CSSM_KEY_PTR derivedKey = NULL;
-    memset(derivedKey, 0, sizeof(CSSM_KEY));
+    CSSM_DATA bPublic = { response.length, (uint8 *)response.bytes };
+    CSSM_DATA labelData = {13, (uint8 *)"SimmetricKey"};
+    CSSM_KEY derivedKey;
+    memset(&derivedKey, 0, sizeof(CSSM_KEY));
    
     rc = CSSM_DeriveKey(ccHandle,
                         &bPublic,
@@ -132,7 +232,7 @@ uint8_t const dhKeyAgreementBytes[] = ""
                         CSSM_KEYATTR_RETURN_DATA | CSSM_KEYATTR_EXTRACTABLE,
                         &labelData,
                         NULL,
-                        derivedKey);
+                        &derivedKey);
     
     CSSM_DeleteContext(ccHandle);
 	
@@ -143,30 +243,71 @@ uint8_t const dhKeyAgreementBytes[] = ""
 		return NULL;
 	}
     
-    SecKeyRef result = NULL;
-    SecKeyCreateWithCSSMKey(derivedKey, &result);
+    NSData *simmetricKeyData = [NSData dataWithBytes:derivedKey.KeyData.Data length:derivedKey.KeyData.Length];
     
     CSSM_FreeKey([OPCSP instance].handle,
                  NULL,
-                 derivedKey,
+                 &derivedKey,
                  CSSM_FALSE);
 
-    return result;
+    [self logMsg:@"CSSM KEY:\n%@", [NSData dataWithBytes:aPublic.KeyData.Data length:aPublic.KeyData.Length]];
+
+    return simmetricKeyData;
 }
 
 - (id) init {
     self = [super init];
     if (self) {
+        requestData = NULL;
+        
+#ifdef DH_USE_CSSM
+        
         memset(&aPrivate, 0, sizeof(CSSM_KEY));
         memset(&aPublic, 0, sizeof(CSSM_KEY));
-        _AData = NULL;
+        
+#endif
+        
+#ifdef DH_USE_OSSL
+        
+        static BIGNUM *dhPrime;
+        static BIGNUM *dhGenerator;
+        
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            dhPrime = BN_new();
+            BN_hex2bn(&dhPrime, dhPrimeStr);
+            
+            dhGenerator = BN_new();
+            BN_hex2bn(&dhGenerator, dhGeneratorStr);
+        });
+        
+        dh = DH_new();
+        dh->p = BN_dup(dhPrime);
+        dh->g = BN_dup(dhGenerator);
+        dh->length = dhPrivateKeySize;
+        
+#endif
+        
      }
     return self;
 }
 
 - (void) dealloc {
+    
+#ifdef DH_USE_CSSM
+    
     CSSM_FreeKey([OPCSP instance].handle, NULL, &aPrivate, CSSM_FALSE);
     CSSM_FreeKey([OPCSP instance].handle, NULL, &aPublic, CSSM_FALSE);
+    
+#endif
+    
+#ifdef DH_USE_OSSL
+    
+    DH_free(dh);
+    
+#endif
+    
+    [requestData release];
     
     [super dealloc];
 }

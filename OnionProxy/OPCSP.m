@@ -36,7 +36,6 @@ static CSSM_API_MEMORY_FUNCS memFuncs = {
  	NULL
 };
 
-
 @implementation OPCSP
 
 #pragma clang diagnostic push

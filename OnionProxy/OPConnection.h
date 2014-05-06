@@ -54,7 +54,7 @@ typedef enum {
 } OPConnectionCommand;
 
 @protocol OPConnectionDelegate <NSObject>
-- (void) connection:(OPConnection *)sender onCommand:(OPConnectionCommand)command withData:(id)data;
+- (void) connection:(OPConnection *)sender onCommand:(OPConnectionCommand)command withData:(NSData *)data;
 - (void) connection:(OPConnection *)sender onEvent:(OPConnectionEvent)event;
 @end
 

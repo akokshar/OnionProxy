@@ -12,9 +12,7 @@
     
 }
 
-/// data to be sent to remote peer
-@property (readonly) NSData *AData;
-
-- (SecKeyRef) createKeyWithBData:(NSData *)BData;
+@property (readonly, getter = getRequest) NSData *request;
+- (NSData *) deriveSimmetricKeyDataWithResonse:(NSData *)response;
 
 @end

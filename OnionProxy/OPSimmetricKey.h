@@ -15,6 +15,8 @@
 @property (readonly, getter = getKeyData) NSData *keyData;
 
 - (id) initWithLength:(NSUInteger)length;
+- (id) initWithData:(NSData *)data;
+
 - (NSData *) encryptData:(NSData *)data;
 - (NSData *) decryptData:(NSData *)data;
 

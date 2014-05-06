@@ -10,6 +10,9 @@
 		34032C4D18AF7296001FF603 /* OPAuthorityServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C4C18AF7296001FF603 /* OPAuthorityServer.m */; };
 		34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34032C5018AF8CDF001FF603 /* Security.framework */; };
 		34032C5818B0C30C001FF603 /* OPConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C5718B0C30C001FF603 /* OPConfig.m */; };
+		341BE0F11908572C00725EDA /* OPSHA1.m in Sources */ = {isa = PBXBuildFile; fileRef = 341BE0F01908572C00725EDA /* OPSHA1.m */; };
+		341BE0F419085B2400725EDA /* OPSHA256.m in Sources */ = {isa = PBXBuildFile; fileRef = 341BE0F319085B2400725EDA /* OPSHA256.m */; };
+		341BE0F7190D3EB600725EDA /* OPNodesManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 341BE0F6190D3EB600725EDA /* OPNodesManager.m */; };
 		341C443618A621E4002018E1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 341C443518A621E4002018E1 /* Cocoa.framework */; };
 		341C444018A621E4002018E1 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 341C443E18A621E4002018E1 /* InfoPlist.strings */; };
 		341C444218A621E4002018E1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 341C444118A621E4002018E1 /* main.m */; };
@@ -59,6 +62,12 @@
 		34032C5018AF8CDF001FF603 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		34032C5618B0C30C001FF603 /* OPConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPConfig.h; sourceTree = "<group>"; };
 		34032C5718B0C30C001FF603 /* OPConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConfig.m; sourceTree = "<group>"; };
+		341BE0EF1908572C00725EDA /* OPSHA1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPSHA1.h; sourceTree = "<group>"; };
+		341BE0F01908572C00725EDA /* OPSHA1.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPSHA1.m; sourceTree = "<group>"; };
+		341BE0F219085B2400725EDA /* OPSHA256.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPSHA256.h; sourceTree = "<group>"; };
+		341BE0F319085B2400725EDA /* OPSHA256.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPSHA256.m; sourceTree = "<group>"; };
+		341BE0F5190D3EB600725EDA /* OPNodesManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPNodesManager.h; sourceTree = "<group>"; };
+		341BE0F6190D3EB600725EDA /* OPNodesManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPNodesManager.m; sourceTree = "<group>"; };
 		341C443218A621E4002018E1 /* OnionProxy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OnionProxy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		341C443518A621E4002018E1 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		341C443818A621E4002018E1 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -122,10 +131,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */,
 				34511EBA18E7113800CE02E5 /* libtommath.a in Frameworks */,
 				34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */,
 				34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */,
-				34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */,
 				341C443618A621E4002018E1 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -259,6 +268,8 @@
 				34FD48F718A7A9310027B524 /* OPTorNode.m */,
 				34224B3818C24ABE00C75B92 /* OPConsensus.h */,
 				34224B3918C24ABE00C75B92 /* OPConsensus.m */,
+				341BE0F5190D3EB600725EDA /* OPNodesManager.h */,
+				341BE0F6190D3EB600725EDA /* OPNodesManager.m */,
 			);
 			name = Directory;
 			sourceTree = "<group>";
@@ -266,6 +277,10 @@
 		34EE82EB18F0691200992506 /* Security */ = {
 			isa = PBXGroup;
 			children = (
+				341BE0EF1908572C00725EDA /* OPSHA1.h */,
+				341BE0F01908572C00725EDA /* OPSHA1.m */,
+				341BE0F219085B2400725EDA /* OPSHA256.h */,
+				341BE0F319085B2400725EDA /* OPSHA256.m */,
 				34E49E7818B9235200759502 /* OPRSAPublicKey.h */,
 				34E49E7918B9235200759502 /* OPRSAPublicKey.m */,
 				34FE94B418E327FA0037CFCF /* OPSimmetricKey.h */,
@@ -391,6 +406,8 @@
 				34EE82EE18F332EF00992506 /* OPEllipticCurveDH.m in Sources */,
 				344B294C18DE18B900C463AA /* OPCircuit.m in Sources */,
 				34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */,
+				341BE0F11908572C00725EDA /* OPSHA1.m in Sources */,
+				341BE0F419085B2400725EDA /* OPSHA256.m in Sources */,
 				34032C5818B0C30C001FF603 /* OPConfig.m in Sources */,
 				34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */,
 				341C444218A621E4002018E1 /* main.m in Sources */,
@@ -402,6 +419,7 @@
 				34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */,
 				34690C9218D0D38800E32D84 /* OPResourceDownloader.m in Sources */,
 				3427594318FAF0DA005308D4 /* OPCertificate.m in Sources */,
+				341BE0F7190D3EB600725EDA /* OPNodesManager.m in Sources */,
 				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
 				34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */,
 				34FD48F318A6433A0027B524 /* OPTorNetwork.m in Sources */,

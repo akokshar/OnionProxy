@@ -7,6 +7,8 @@
 
 #import "OPConsensus.h"
 #import "OPConfig.h"
+#import "OPSHA1.h"
+#import "OPSHA256.h"
 //#import "OPJobDispatcher.h"
 #import "OPResourceDownloader.h"
 #import "OPAuthority.h"
@@ -198,6 +200,15 @@
     
     [self logMsg:@"ready in %f seconds", [[NSDate date] timeIntervalSinceDate:self.lastUpdated]];
     
+    /* for test only
+    */
+    for (int i = 0; i < 50 && i < self.routerNodesKeys.count; i++) {
+        OPTorNode *oldNode = [nodes objectForKey:[self.routerNodesKeys objectAtIndex:i]];
+        [oldNode prefetchDescriptor];
+    }
+    /*
+     */
+    
     self.lastUpdated = [NSDate date];
     [self scheduleUpdate];
 }
@@ -232,7 +243,7 @@
         
         // ***
         // for test only. do not load descriptors from here as it will get them from authorities on very first load cicle.
-        [node prefetchDescriptor];
+        //[node prefetchDescriptor];
         // ***
         
         [node release];
@@ -305,13 +316,13 @@
 
                     if ([shaMethod hasPrefix:@"sha1"]) {
                         if (sha1 == NULL) {
-                            sha1 = [self sha1DigestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]]];
+                            sha1 = [OPSHA1 digestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]]];
                         }
                         digest = sha1;
                     }
                     else {
                         if (sha256 == NULL) {
-                            sha256 = [self sha256DigestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]]];
+                            sha256 = [OPSHA256 digestOfText:[consensusStr substringWithRange:[match rangeAtIndex:1]]];
                         }
                         digest = sha256;
                     }

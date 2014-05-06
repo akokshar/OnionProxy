@@ -15,7 +15,6 @@
 }
 
 @property (readonly, getter = getDigestHexString) NSString *digestHexString;
-@property (retain) NSData *keyData1;
 
 - (id) initWithBase64DerEncodingStr:(NSString *)keyEncoding;
 

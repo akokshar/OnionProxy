@@ -13,14 +13,30 @@
 #import "OPConnection.h"
 #import "OPSimmetricKey.h"
 #import "OPDiffieHellman.h"
+#import "OPSHA1.h"
+
+NSUInteger const OPKeyLen = 16;
 
 NSString * const circuitNodeKey = @"NodeKey";
 NSString * const circuitSessionKeyKey = @"SessionKeyKey";
+NSString * const circuitHandshakeKey = @"HandshakeKey";
+
+typedef struct {
+    
+} OPClientHandshakeData;
+
+typedef struct {
+    char DHData[128];
+    char KHData[20];
+} OPServerHandshakeData;
 
 @interface OPCircuit() {
     NSMutableArray *nodes;
     OPConnection *connection;
 }
+
+- (void) beginHandshake;
+- (void) finishHandshakeWithDada:(NSData *)data;
 
 - (void) addNode:(OPTorNode *)node;
 - (void) establishWithDestinationPort:(NSUInteger)port;
@@ -29,20 +45,43 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
 
 @implementation OPCircuit
 
-- (void) connection:(OPConnection *)sender onCommand:(OPConnectionCommand)command withData:(id)data {
+- (void) beginHandshake {
+    
+}
+
+- (void) finishHandshakeWithDada:(NSData *)data {
+    
+}
+
+- (void) connection:(OPConnection *)sender onCommand:(OPConnectionCommand)command withData:(NSData *)data {
     switch (command) {
-        case OPConnectionCommandCerts: {
-            [self logMsg:@"OPConnectionCommandCerts"];
+        case OPConnectionCommandCreated: {
+            [self logMsg:@"OPConnectionCommandCreated"];
+            
+            NSMutableDictionary *hopSettings = [nodes objectAtIndex:0];
+//            OPTorNode *node = [hopSettings objectForKey:circuitNodeKey];
+            OPDiffieHellman *dh = [hopSettings objectForKey:circuitHandshakeKey];
+//            OPSimmetricKey *simmetricKey = [hopSettings objectForKey:circuitSessionKeyKey];
+            
+            NSData *baseMaterial = [dh deriveSimmetricKeyDataWithResonse:[NSData dataWithBytes:data.bytes length:128]];
+            NSMutableData *k = [[NSMutableData alloc] init]; //WithCapacity:baseMaterial.length + 1];
+            for (char i = 0; i < 5; i++) {
+                NSMutableData *temp = [NSMutableData dataWithCapacity:baseMaterial.length + 1];
+                [temp appendData:baseMaterial];
+                [temp appendBytes:&i length:1];
+                
+                [self logMsg:@"%@", [OPSHA1 digestOfData:temp]];
+                [self logMsg:@"%@\n", [NSData dataWithBytes:data.bytes + 128 length:20]];
+            }
+            
+            [k release];
         } break;
 
-        case OPConnectionCommandAuthChallenge: {
-            [self logMsg:@"OPConnectionCommandAuthChallenge"];
+        case OPConnectionCommandDestroy: {
+            uint8_t reason = ((uint8_t *)data.bytes)[0];
+            [self logMsg:@"Desroy reason: %i", reason];
         } break;
-
-        case OPConnectionCommandNetInfo: {
-            [self logMsg:@"OPConnectionCommandNetInfo"];
-        } break;
-
+            
         default: {
             [self logMsg:@"OPConnectionCommand %i", command];
         } break;
@@ -52,7 +91,7 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
 - (void) connection:(OPConnection *)sender onEvent:(OPConnectionEvent)event {
     switch (event) {
         case OPConnectionEventConnected: {
-            [self logMsg:@"OPConnectionEventConnected"];
+            [self logMsg:@"Ready to send CREATE Cell"];
             
             // Connected to the first node.
             // CREATEv1 Cell payload is as this:
@@ -64,35 +103,31 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
             //              Symmetrically encrypted:
             //                  Second part of g^x            [DH_LEN-(PK_ENC_LEN-PK_PAD_LEN-KEY_LEN) bytes]
             //
-            
-            OPTorNode *node = [[nodes objectAtIndex:0] objectForKey:circuitNodeKey];
-            
-            [self logMsg:@"Ready to send CREATE Cell"];
+            NSMutableDictionary *hopSettings = [nodes objectAtIndex:0];
             
             OPDiffieHellman *dh = [[OPDiffieHellman alloc] init];
-            //[self logMsg:@"E=%@", [self hexStringFromData:dh.EData]];
+            [hopSettings setObject:dh forKey:circuitHandshakeKey];
             
             OPSimmetricKey *simmetricKey = [[OPSimmetricKey alloc] initWithLength:16];
-            //[self logMsg:@"Symmetric key=%@", [self hexStringFromData:simmetricKey.keyData]];
+            [hopSettings setObject:simmetricKey forKey:circuitSessionKeyKey];
+
+            OPTorNode *node = [hopSettings objectForKey:circuitNodeKey];
             
             NSMutableData *payloadPart1Clear = [NSMutableData dataWithCapacity:simmetricKey.keyData.length + 70];
             [payloadPart1Clear appendData:simmetricKey.keyData];
-            [payloadPart1Clear appendBytes:dh.AData.bytes length:70];
-            NSMutableData *payloadPart2Clear = [NSMutableData dataWithBytes:dh.AData.bytes + 70 length:dh.AData.length - 70];
+            [payloadPart1Clear appendBytes:dh.request.bytes length:70];
             
-            NSData *payload1 = [node.onionKey encryptData:payloadPart1Clear];
-            NSData *payload2 = [simmetricKey encryptData:payloadPart2Clear];
+            NSMutableData *payloadPart2Clear = [NSMutableData dataWithBytes:dh.request.bytes + 70 length:dh.request.length - 70];
             
             NSMutableData *packet = [NSMutableData data];
-            [packet appendData:payload1];
-            [packet appendData:payload2];
+            [packet appendData:[node.onionKey encryptData:payloadPart1Clear]];
+            [packet appendData:[simmetricKey encryptData:payloadPart2Clear]];
             
             [self logMsg:@"Sending Create circuit request: %lu bytes", (unsigned long)packet.length];
             [sender sendCommand:OPConnectionCommandCreate withData:packet];
             
             [simmetricKey release];
             [dh release];
-
         } break;
         
         case OPConnectionEventConnectionFailed: {
@@ -106,14 +141,14 @@ NSString * const circuitSessionKeyKey = @"SessionKeyKey";
 }
 
 - (void) addNode:(OPTorNode *)node {
-    OPSimmetricKey *sessionKey = [[OPSimmetricKey alloc] init];
+//    OPSimmetricKey *sessionKey = [[OPSimmetricKey alloc] init];
     NSMutableDictionary *nodeInfo = [NSMutableDictionary dictionaryWithObjectsAndKeys:
                                      node, circuitNodeKey,
-                                     sessionKey, circuitSessionKeyKey,
+//                                     sessionKey, circuitSessionKeyKey,
                                      nil];
     [nodes addObject:nodeInfo];
 
-    [sessionKey release];
+//    [sessionKey release];
 }
 
 - (void) establishWithDestinationPort:(NSUInteger)port {

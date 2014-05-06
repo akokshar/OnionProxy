@@ -8,6 +8,7 @@
 
 #import "OPAuthorityServer.h"
 #import "OPConfig.h"
+#import "OPSHA1.h"
 #import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
@@ -169,7 +170,7 @@
                     // TODO: Verivy crosscert
                 }
                 
-                NSData *signedTextDigest = [self sha1DigestOfText:[keysStr substringWithRange:[match rangeAtIndex:1]]];
+                NSData *signedTextDigest = [OPSHA1 digestOfText:[keysStr substringWithRange:[match rangeAtIndex:1]]];
                 BOOL isVerified = [self.identPublicKey verifyBase64SignatureStr:[keysInfoTmp objectForKey:@"dir-key-certification"] forDataDigest:signedTextDigest];
                 if (isVerified) {
                     //[self logMsg:@"Keys signature verified for '%@'", [config getNickOfServerAtIndex:configIndex]];
