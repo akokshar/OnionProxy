@@ -31,6 +31,8 @@ char const * dhGeneratorStr = "02";
 
 int const dhPrivateKeySize = 1024;
 int const dhPrivateKeyLen = 128;
+int const dhPublicKeySize = 1024;
+int const dhPublicKeyLen = 128;
 
 uint8_t const dhKeyAgreementBytes[] = ""
             "\x30\x81\x95"          // Sequence
@@ -259,7 +261,7 @@ uint8_t const dhKeyAgreementBytes[] = ""
     self = [super init];
     if (self) {
         requestData = NULL;
-        
+
 #ifdef DH_USE_CSSM
         
         memset(&aPrivate, 0, sizeof(CSSM_KEY));
@@ -295,16 +297,12 @@ uint8_t const dhKeyAgreementBytes[] = ""
 - (void) dealloc {
     
 #ifdef DH_USE_CSSM
-    
     CSSM_FreeKey([OPCSP instance].handle, NULL, &aPrivate, CSSM_FALSE);
     CSSM_FreeKey([OPCSP instance].handle, NULL, &aPublic, CSSM_FALSE);
-    
 #endif
     
 #ifdef DH_USE_OSSL
-    
     DH_free(dh);
-    
 #endif
     
     [requestData release];

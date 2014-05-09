@@ -40,7 +40,8 @@ extern NSString * const nodePolicyStrKey;
 @property (readonly) BOOL isBadDirectory;
 @property (readonly) BOOL isHSDir;
 
-@property (readonly) NSString *ip;
+@property (readonly) NSString *ipStr;
+@property (readonly) uint32_t ip;
 @property (readonly) NSUInteger orPort;
 @property (readonly) NSUInteger dirPort;
 

@@ -8,6 +8,8 @@
 
 #import "OPObject.h"
 
+extern NSUInteger const sha1DigestLen;
+
 @interface OPSHA1 : OPObject {
     
 }

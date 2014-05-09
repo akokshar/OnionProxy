@@ -8,6 +8,8 @@
 
 #import "OPObject.h"
 
+extern int const dhPublicKeyLen;
+
 @interface OPDiffieHellman : OPObject {
     
 }

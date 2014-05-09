@@ -15,6 +15,10 @@
 }
 
 @property (readonly, getter = getDigestHexString) NSString *digestHexString;
+/// length in bytes
+@property (readonly, getter = getKeyLength) NSUInteger keyLength;
+/// padding len (OAEP)
+@property (readonly) NSUInteger padLength;
 
 - (id) initWithBase64DerEncodingStr:(NSString *)keyEncoding;
 

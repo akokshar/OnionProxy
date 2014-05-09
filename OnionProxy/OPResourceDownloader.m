@@ -162,7 +162,7 @@
 + (BOOL) downloadResource:(NSString *)resource to:(NSString *)file timeout:(NSUInteger)timeout {
     OPTorNode *cacheServer = [OPConsensus consensus].randomV2DirNode;
     if (cacheServer) {
-        return [OPResourceDownloader downloadFromIp:cacheServer.ip port:cacheServer.dirPort resource:resource to:file timeout:timeout];
+        return [OPResourceDownloader downloadFromIp:cacheServer.ipStr port:cacheServer.dirPort resource:resource to:file timeout:timeout];
     }
     else {
         return [OPResourceDownloader downloadFromAuthorityResource:resource to:file timeout:5];

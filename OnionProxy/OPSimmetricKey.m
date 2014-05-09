@@ -7,15 +7,14 @@
 //
 
 #define AES_USE_OSSL
+//#define AES_USE_CC
 
 #import "OPSimmetricKey.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonCryptor.h>
 
 #ifdef AES_USE_OSSL
-#import <openssl/evp.h>
 #import <openssl/aes.h>
-#import <openssl/crypto.h>
 #endif
 
 #define AES_KEY_LEN 16
@@ -24,7 +23,6 @@
     
 }
 
-@property (readonly) NSUInteger keyLength;
 @property (readonly, getter = getSecKey) SecKeyRef secKey;
 
 - (NSData *) randomDataOfLen:(NSUInteger)length;
@@ -100,6 +98,8 @@
 #ifdef AES_USE_OSSL
     return [self osslEncryptData:data];
 #endif
+    
+    //CCCrypt(<#CCOperation op#>, <#CCAlgorithm alg#>, <#CCOptions options#>, <#const void *key#>, <#size_t keyLength#>, <#const void *iv#>, <#const void *dataIn#>, <#size_t dataInLength#>, <#void *dataOut#>, <#size_t dataOutAvailable#>, <#size_t *dataOutMoved#>)
     
     SecTransformRef encryptTransform = SecEncryptTransformCreate(self.secKey, NULL);
     if (!encryptTransform) {
@@ -181,25 +181,18 @@
 - (NSData *) randomDataOfLen:(NSUInteger)length {
     NSMutableData *data = [NSMutableData dataWithLength:length];
     SecRandomCopyBytes(kSecRandomDefault, length, data.mutableBytes);
-    
-//    for (int i = 0; i < length; i += sizeof(uint32_t)) {
-//        uint32_t r = arc4random();
-//        memcpy(data.mutableBytes, &r, MIN(sizeof(uint32_t), length - i));
-//    }
-
     return data;
 }
 
-- (id) initWithLength:(NSUInteger)length {
+- (id) init {
     self = [super init];
     if (self) {
-        
+        _keyLength = AES_KEY_LEN;
 #ifdef AES_USE_OSSL
-        _keyData = [self randomDataOfLen:length];
+        _keyData = [self randomDataOfLen:AES_KEY_LEN];
         [_keyData retain];
 #else
         _secKey = NULL;
-        _keyLength = length;
         _keyData = NULL;
 #endif
     }
@@ -209,14 +202,12 @@
 - (id) initWithData:(NSData *)data {
     self = [super init];
     if (self) {
-        
+        _keyLength = data.length;
 #ifdef AES_USE_OSSL
         
 #else
         _keyData = data;
         [_keyData retain];
-        
-        _keyLength = data.length;
         _secKey = NULL;
 #endif
     }

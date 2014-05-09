@@ -82,6 +82,7 @@ typedef struct {
 - (BOOL) isVariableLenCellWithCommand:(OPConnectionCommand)command;
 - (void) queueCellWithCommand:(OPConnectionCommand)command andData:(NSData *)data;
 - (void) processCell:(OPCell *)cell;
+- (void) doProcessCell:(OPCell *)cell;
 
 @end
 
@@ -130,7 +131,7 @@ typedef struct {
     NSInputStream *iStream = nil;
     NSOutputStream *oStream = nil;
     
-    NSHost *host = [NSHost hostWithAddress:self.node.ip];
+    NSHost *host = [NSHost hostWithAddress:self.node.ipStr];
     [NSStream getStreamsToHost:host port:self.node.orPort inputStream:&iStream outputStream:&oStream];
     
     if (iStream == NULL || oStream == NULL) {
@@ -442,6 +443,11 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
                 
                 [self processCell:cell];
                 
+                // stop if error during processing cell was fatal and led to disconnection
+                if (!self.isConnected) {
+                    return;
+                }
+                
                 [iBuffer replaceBytesInRange:NSMakeRange(0, cellLen) withBytes:NULL length:0];
             }
         } break;
@@ -463,14 +469,20 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
 }
 
 - (void) processCell:(OPCell *)cell {
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+    [self doProcessCell:cell];
+    [pool release];
+}
+
+- (void) doProcessCell:(OPCell *)cell {
     switch (cell->command) {
         case OPConnectionCommandNetInfo: {
             [self logMsg:@"OPConnectionCommandNetInfo"];
             
-            //                    Timestamp              [4 bytes]
-            //                    Other OR's address     [variable]
-            //                    Number of addresses    [1 byte]
-            //                    This OR's addresses    [variable]
+            // Timestamp              [4 bytes]
+            // Other OR's address     [variable]
+            // Number of addresses    [1 byte]
+            // This OR's addresses    [variable]
             
             uint8_t *data = cell->payload;
             int pos = 0;
@@ -478,24 +490,17 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
             uint32_t timestamp;
             memcpy((uint8_t *)&timestamp, data, sizeof(uint32_t));
             timestamp = CFSwapInt32BigToHost(timestamp);
-            
             pos += sizeof(uint32_t);
-            OPTlv *otherAddr = (OPTlv *)(data + pos);
-            pos += sizeof(OPTlv) + otherAddr->length;
             
-            [self logMsg:@"Other Addr type = %i", otherAddr->type];
-            [self logMsg:@"Other Addr len = %i", otherAddr->length];
-            NSData *otherAddrData = [NSData dataWithBytes:otherAddr->value length:otherAddr->length];
-            [self logMsg:@"Other Addr Valye = %@", otherAddrData];
+            OPTlv *myAddr = (OPTlv *)(data + pos);
+            pos += sizeof(OPTlv) + myAddr->length;
             
             uint8_t numOfAddr = (data + pos)[0];
-            [self logMsg:@"Other Addr type = %i", numOfAddr];
-            
             pos += 1;
             
-            OPTlv *thisAddr = NULL;
+            OPTlv *orAddr = NULL;
             
-            for (int i = 0; i < numOfAddr && pos < OPCellPayloadLen - sizeof(OPTlv); i++) {
+            for (int i = 0; orAddr == NULL && i < numOfAddr && pos < OPCellPayloadLen - sizeof(OPTlv); i++) {
                 OPTlv *addr = (OPTlv *)(data + pos);
                 pos += sizeof(OPTlv) + addr->length;
                 
@@ -505,14 +510,26 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
                     return;
                 }
                 
-                if (thisAddr == NULL) {
-                    thisAddr = addr;
-                }
+                // 0x00 -- Hostname
+                // 0x04 -- IPv4 address
+                // 0x06 -- IPv6 address
+                // 0xF0 -- Error, transient
+                // 0xF1 -- Error, nontransient
                 
-                [self logMsg:@"Other Addr type = %i", addr->type];
-                [self logMsg:@"Other Addr len = %i", addr->length];
-                NSData *addrData = [NSData dataWithBytes:addr->value length:addr->length];
-                [self logMsg:@"Other Addr Valye = %@", addrData];
+                if (addr->type == 0x4 && addr->length == 4) {
+                    uint32_t ip;
+                    memcpy(&ip, addr->value, 4);
+                    
+                    if (ip == self.node.ip) {
+                        orAddr = addr;
+                    }
+                }
+            }
+            
+            if (orAddr == NULL) {
+                [self logMsg:@"Router anounced address does not match one from consensus"];
+                [self disconnect];
+                return;
             }
             
             NSMutableData *netInfo = [[NSMutableData alloc] init];
@@ -521,11 +538,11 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
             timestamp = CFSwapInt32HostToBig(timestamp);
             [netInfo appendBytes:&timestamp length:sizeof(uint32_t)];
             
-            [netInfo appendBytes:thisAddr length:sizeof(OPTlv) + thisAddr->length];
+            [netInfo appendBytes:orAddr length:sizeof(OPTlv) + orAddr->length];
             
             numOfAddr = 1;
             [netInfo appendBytes:&numOfAddr length:sizeof(numOfAddr)];
-            [netInfo appendBytes:otherAddr length:sizeof(OPTlv) + otherAddr->length];
+            [netInfo appendBytes:myAddr length:sizeof(OPTlv) + myAddr->length];
             [netInfo setLength:OPCellPayloadLen];
             [self sendCommand:OPConnectionCommandNetInfo withData:netInfo];
             [netInfo release];

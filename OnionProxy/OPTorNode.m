@@ -14,6 +14,8 @@
 #import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
+#import <arpa/inet.h>
+
 NSString * const nodeFingerprintDataKey = @"FingerprintData";
 NSString * const nodeFingerprintStrKey = @"FingerprintStr";
 NSString * const nodeDescriptorDataKey = @"DescriptorData";
@@ -34,7 +36,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @property (readonly, getter = getCacheFilePath) NSString *cacheFilePath;
 @property (readonly, getter = getResourcePath) NSString *resourcePath;
 
-@property (retain) NSString *ip;
+@property (retain) NSString *ipStr;
 
 @property (retain, getter = getFingerprint) NSData *fingerprint;
 @property (retain) NSData *currentDescriptorDigest;
@@ -67,7 +69,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @synthesize isBadDirectory = _isBadDirectory;
 @synthesize isHSDir = _isHSDir;
 
-@synthesize ip = _ip, orPort = _orPort, dirPort = _dirPort;
+@synthesize ipStr = _ipStr, orPort = _orPort, dirPort = _dirPort;
+@synthesize ip = _ip;
 
 @synthesize fingerprint = _fingerprint;
 @synthesize currentDescriptorDigest = _currentDescriptorDigest;
@@ -279,9 +282,10 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     _isBadDirectory = [array containsObject:@"BadDirectory"];
     _isHSDir = [array containsObject:@"HSDir"];
     
-    NSString *ip = [nodeParams objectForKey:nodeIpStrKey];
-    if (![self.ip isEqualToString:ip]) {
-        self.ip = ip;
+    NSString *ipStr = [nodeParams objectForKey:nodeIpStrKey];
+    if (![self.ipStr isEqualToString:ipStr]) {
+        self.ipStr = ipStr;
+        inet_pton(AF_INET, [ipStr cStringUsingEncoding:NSUTF8StringEncoding], &_ip);
     }
     
     NSString *orPort = [nodeParams objectForKey:nodeOrPortStrKey];
@@ -316,7 +320,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 - (void) dealloc {
     [self logMsg:@"dealloc TorNode"];
     
-    self.ip = NULL;
+    self.ipStr = NULL;
     
     self.fingerprint = NULL;
     self.currentDescriptorDigest = NULL;

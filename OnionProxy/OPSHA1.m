@@ -9,6 +9,8 @@
 #import "OPSHA1.h"
 #import <CommonCrypto/CommonDigest.h>
 
+NSUInteger const sha1DigestLen = CC_SHA1_DIGEST_LENGTH;
+
 @interface OPSHA1() {
     CC_SHA1_CTX ctx;
 }

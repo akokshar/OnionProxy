@@ -47,6 +47,14 @@
     return [self hexStringFromData:_digest];
 }
 
+@synthesize padLength = _padLength;
+
+@synthesize keyLength = _keyLength;
+
+- (NSUInteger) getKeyLength {
+    return SecKeyGetBlockSize(self.secKey);
+}
+
 @synthesize secKey;
 
 - (SecKeyRef) getSecKeyRef {
@@ -66,6 +74,8 @@
         if (keyData != NULL) {
             _digest = [OPSHA1 digestOfData:keyData];
             [_digest retain];
+            
+            _padLength = 42; // OAEP padding len
             
 #ifdef RSA_USE_OSSL
             unsigned char *keyBytes = (unsigned char *)keyData.bytes;
