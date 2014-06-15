@@ -6,15 +6,16 @@
 //
 //
 
+// if nothing defined SecTransform will be used (no AES counter mode)
 #define AES_USE_OSSL
-//#define AES_USE_CC
+//#define AES_USE_CC // no AES counter mode
 
 #import "OPSimmetricKey.h"
-#import <Security/Security.h>
-#import <CommonCrypto/CommonCryptor.h>
 
 #ifdef AES_USE_OSSL
-#import <openssl/aes.h>
+    #import <openssl/aes.h>
+#else
+    #import <Security/Security.h>
 #endif
 
 #define AES_KEY_LEN 16
@@ -23,10 +24,13 @@
     
 }
 
+#ifndef AES_USE_OSSL
 @property (readonly, getter = getSecKey) SecKeyRef secKey;
+#endif
 
 - (NSData *) randomDataOfLen:(NSUInteger)length;
-- (NSData *) osslEncryptData:(NSData *)data;
+- (NSData *) osslCryptData:(NSData *)data;
+- (void) osslInplaceCryptData:(NSMutableData *)data;
 
 @end
 
@@ -37,26 +41,10 @@
 @synthesize keyData = _keyData;
 
 - (NSData *) getKeyData {
-    if (self.secKey == NULL) {
-        return NULL;
-    }
-    
-    @synchronized(self) {
-        if (_keyData == NULL) {
-            SecItemImportExportKeyParameters params = {};
-            CFDataRef keyDataRef = NULL;
-            OSStatus oserr = SecItemExport(self.secKey, kSecFormatRawKey, 0, &params, &keyDataRef);
-            if (oserr) {
-                fprintf(stderr, "SecItemExport failed (oserr= %d)\n", oserr);
-                exit(-1);
-            }
-    
-            _keyData = (NSData *)keyDataRef;
-        }
-    }
     return _keyData;
 }
 
+#ifndef AES_USE_OSSL
 @synthesize secKey = _secKey;
 
 - (SecKeyRef) getSecKey {
@@ -92,14 +80,18 @@
     }
     return _secKey;
 }
+#endif
 
 - (NSData *) encryptData:(NSData *)data {
     
 #ifdef AES_USE_OSSL
-    return [self osslEncryptData:data];
-#endif
+    NSData *osslResult = [self osslCryptData:data];
+    return osslResult;
+#else
     
-    //CCCrypt(<#CCOperation op#>, <#CCAlgorithm alg#>, <#CCOptions options#>, <#const void *key#>, <#size_t keyLength#>, <#const void *iv#>, <#const void *dataIn#>, <#size_t dataInLength#>, <#void *dataOut#>, <#size_t dataOutAvailable#>, <#size_t *dataOutMoved#>)
+    unsigned char ivec[16];
+    memset(ivec, 0, 16);
+    NSData *ivData = [NSData dataWithBytes:ivec length:sizeof(ivec)];
     
     SecTransformRef encryptTransform = SecEncryptTransformCreate(self.secKey, NULL);
     if (!encryptTransform) {
@@ -108,7 +100,8 @@
     
     CFErrorRef errorRef = NULL;
     SecTransformSetAttribute(encryptTransform, kSecTransformInputAttributeName, data, NULL);
-    //SecTransformSetAttribute(encryptTransform, kSecPaddingKey, kSecPaddingNoneKey, NULL);
+    SecTransformSetAttribute(encryptTransform, kSecIVKey, ivData, NULL);
+    //SecTransformSetAttribute(encryptTransform, kSecModeNoneKey, kCFBooleanTrue, NULL);
     
     NSData *encryptedData = SecTransformExecute(encryptTransform, &errorRef);
     if (errorRef) {
@@ -120,12 +113,85 @@
     NSData *result = [NSData dataWithBytes:encryptedData.bytes length:data.length];
     [encryptedData release];
     
-    [self logMsg:@"SimmetricKey Encription result from settransform:\n%@", result];
-
     return result;
+#endif
+    
 }
 
-- (NSData *) osslEncryptData:(NSData *)data {
+- (void) inplaceEncryptData:(NSMutableData *)data {
+#ifdef AES_USE_OSSL
+    [self osslInplaceCryptData:data];
+#else
+
+#endif
+}
+
+- (NSData *) decryptData:(NSData *)data {
+    
+#ifdef AES_USE_OSSL
+    NSData *osslResult = [self osslCryptData:data];
+    return osslResult;
+#else
+    unsigned char ivec[16];
+    memset(ivec, 0, 16);
+    NSData *ivData = [NSData dataWithBytes:ivec length:sizeof(ivec)];
+    
+    SecTransformRef decryptTransform = SecDecryptTransformCreate(self.secKey, NULL);
+    if (!decryptTransform) {
+        return NULL;
+    }
+    CFErrorRef errorRef = NULL;
+    SecTransformSetAttribute(decryptTransform, kSecTransformInputAttributeName, data, &errorRef);
+    SecTransformSetAttribute(decryptTransform, kSecIVKey, ivData, NULL);
+    //SecTransformSetAttribute(encryptTransform, kSecModeNoneKey, kCFBooleanTrue, NULL);
+    
+    NSData *decryptedData = SecTransformExecute(decryptTransform, &errorRef);
+    if (errorRef) {
+        CFShow(errorRef);
+    }
+    CFRelease(decryptTransform);
+    
+    return [decryptedData autorelease];
+#endif
+    
+}
+
+- (void) inplaceDecryptData:(NSMutableData *)data {
+#ifdef AES_USE_OSSL
+    [self osslInplaceCryptData:data];
+#else
+    
+#endif
+}
+
+- (void) osslInplaceCryptData:(NSMutableData *)data {
+
+#ifdef AES_USE_OSSL
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    
+    int outputLen = (int)data.length + AES_BLOCK_SIZE;
+    unsigned char outputBuf[outputLen];
+    memset(outputBuf, 0, outputLen);
+    
+    unsigned char ivec[16];
+    memset(ivec, 0, 16);
+    
+    unsigned char ecount[16];
+    memset(ecount, 0, 16);
+    
+    unsigned int num = 0;
+    
+    AES_KEY encKey;
+    AES_set_encrypt_key(self.keyData.bytes, (int)self.keyData.length * 8, &encKey);
+    AES_ctr128_encrypt(data.bytes, data.mutableBytes, data.length, &encKey, ivec, ecount, &num);
+
+#pragma clang diagnostic pop
+#endif
+    
+}
+
+- (NSData *) osslCryptData:(NSData *)data {
     NSData *osslResult = NULL;
     
 #ifdef AES_USE_OSSL
@@ -152,30 +218,12 @@
     }
     
     osslResult = [NSData dataWithBytes:outputBuf length:data.length];
-    [self logMsg:@"SimmetricKey Encription result from OpenSSL:\n%@", osslResult];
+    //[self logMsg:@"SimmetricKey Encription result from OpenSSL:\n%@", osslResult];
     
 #pragma clang diagnostic pop
 #endif
     
     return osslResult;
-}
-
-- (NSData *) decryptData:(NSData *)data {
-    SecTransformRef decryptTransform = SecDecryptTransformCreate(self.secKey, NULL);
-    if (!decryptTransform) {
-        return NULL;
-    }
-    CFErrorRef errorRef = NULL;
-    SecTransformSetAttribute(decryptTransform, kSecTransformInputAttributeName, data, &errorRef);
-    //SecTransformSetAttribute(decryptTransform, kSecPaddingKey, kSecPaddingNoneKey, NULL);
-
-    NSData *decryptedData = SecTransformExecute(decryptTransform, &errorRef);
-    if (errorRef) {
-        CFShow(errorRef);
-    }
-    CFRelease(decryptTransform);
-    
-    return [decryptedData autorelease];
 }
 
 - (NSData *) randomDataOfLen:(NSUInteger)length {
@@ -188,9 +236,10 @@
     self = [super init];
     if (self) {
         _keyLength = AES_KEY_LEN;
-#ifdef AES_USE_OSSL
-        _keyData = [self randomDataOfLen:AES_KEY_LEN];
+        _keyData = [self randomDataOfLen:_keyLength];
         [_keyData retain];
+#ifdef AES_USE_OSSL
+        
 #else
         _secKey = NULL;
         _keyData = NULL;
@@ -203,21 +252,24 @@
     self = [super init];
     if (self) {
         _keyLength = data.length;
+        _keyData = data;
+        [_keyData retain];
 #ifdef AES_USE_OSSL
         
 #else
-        _keyData = data;
-        [_keyData retain];
         _secKey = NULL;
 #endif
+        
     }
     return self;
 }
 
 - (void) dealloc {
+#ifndef AES_USE_OSSL
     if (_secKey) {
         CFRelease(_secKey);
     }
+#endif
     
     [_keyData release];
     

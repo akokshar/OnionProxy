@@ -78,7 +78,6 @@ typedef struct {
 - (void) stopThread;
 - (void) doDisconnect;
 
-- (uint16_t) generateCircuitID;
 - (BOOL) isVariableLenCellWithCommand:(OPConnectionCommand)command;
 - (void) queueCellWithCommand:(OPConnectionCommand)command andData:(NSData *)data;
 - (void) processCell:(OPCell *)cell;
@@ -94,17 +93,16 @@ typedef struct {
 
 - (uint16_t) getCircuitID {
     if (_circuitID == 0) {
-        _circuitID = [self generateCircuitID];
+        static uint16_t lastID = 0;
+        _circuitID = lastID + arc4random() % 13 + 1;
     }
     return _circuitID;
 }
 
-- (uint16_t) generateCircuitID {
-    static uint16_t lastID = 0;
-    return lastID + arc4random() % 13;
-}
-
 - (BOOL) connectToNode:(OPTorNode *)node {
+    if (node == NULL) {
+        return NO;
+    }
     self.node = node;
     [self startThread];
     [self performSelector:@selector(doWait) onThread:connectionThread withObject:NULL waitUntilDone:YES];
@@ -131,9 +129,8 @@ typedef struct {
     NSInputStream *iStream = nil;
     NSOutputStream *oStream = nil;
     
-    NSHost *host = [NSHost hostWithAddress:self.node.ipStr];
-    [NSStream getStreamsToHost:host port:self.node.orPort inputStream:&iStream outputStream:&oStream];
-    
+    [NSStream getStreamsToHostWithName:self.node.ipStr port:self.node.orPort inputStream:&iStream outputStream:&oStream];
+
     if (iStream == NULL || oStream == NULL) {
         [iStream release];
         [oStream release];
@@ -172,6 +169,18 @@ typedef struct {
     
     while (self.isRunning && [runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
     
+    [self.iStream close];
+    [self.oStream close];
+    
+    [self.iStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+    [self.oStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+    
+    self.iStream = NULL;
+    self.oStream = NULL;
+    
+    [iBuffer setLength:0];
+    [oBuffer removeAllObjects];
+    
     [pool release];
     
     [self logMsg:@"connections thread finished"];
@@ -189,19 +198,7 @@ typedef struct {
 }
 
 - (void) doDisconnect {
-    NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
-    
-    [self.iStream close];
-    [self.oStream close];
-    
-    [self.iStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    [self.oStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    
-    self.iStream = NULL;
-    self.oStream = NULL;
-    
     self.isConnected = NO;
-    
     [self.delegate connection:self onEvent:OPConnectionEventDisconnected];
     [self logMsg:@"doDisconnect"];
 }
@@ -211,8 +208,6 @@ typedef struct {
         if (self.isConnected) {
             [self performSelector:@selector(doDisconnect) onThread:connectionThread withObject:NULL waitUntilDone:NO];
             [self stopThread];
-            [iBuffer setLength:0];
-            [oBuffer removeAllObjects];
             [self logMsg:@"disconnect"];
         }
     }
@@ -407,7 +402,7 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
         } break;
             
         case NSStreamEventHasBytesAvailable: {
-            //[self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
+            [self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
             uint8_t buf[OPCellSizeMax];
             NSInteger len = 0;
             len = [self.iStream read:buf maxLength:OPCellSizeMax];

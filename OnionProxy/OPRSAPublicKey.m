@@ -29,7 +29,7 @@
 #endif
 }
 
-@property (readonly) NSData *digest;
+//@property (readonly) NSData *digest;
 @property (readonly, getter = getSecKeyRef) SecKeyRef secKey;
 
 - (NSData *) cssmEncryptData:(NSData *)data;
@@ -58,10 +58,13 @@
 @synthesize secKey;
 
 - (SecKeyRef) getSecKeyRef {
-    if (keyItems) {
-        return (SecKeyRef) CFArrayGetValueAtIndex(keyItems, 0);
+    @synchronized(self) {
+        if (keyItems) {
+            return (SecKeyRef) CFArrayGetValueAtIndex(keyItems, 0);
+        }
     }
     return NULL;
+//    return _secKey;
 }
 
 - (id) initWithBase64DerEncodingStr:(NSString *)keyEncoding {
@@ -94,6 +97,11 @@
                 CFRelease(errorMsg);
             }
             
+//            _secKey = (SecKeyRef) CFArrayGetValueAtIndex(keyItems, 0);
+//            CFRetain(_secKey);
+//            
+//            CFRelease(keyItems);
+//            keyItems = NULL;
         }
     }
     return self;
@@ -201,7 +209,7 @@
     NSData *encryptedData = SecTransformExecute(encryptTransform, NULL);
     CFRelease(encryptTransform);
     
-    [self logMsg:@"RSAPublicKey encryption result from Transform = \n'%@'", encryptedData];
+    //[self logMsg:@"RSAPublicKey encryption result from Transform = \n'%@'", encryptedData];
     
     return [encryptedData autorelease];
 }

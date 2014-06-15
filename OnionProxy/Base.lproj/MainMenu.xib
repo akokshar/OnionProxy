@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="5053" systemVersion="13C64" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6154.17" systemVersion="14A238x" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="5053"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6154.17"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -10,251 +10,128 @@
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <view id="5hc-iH-HZu">
+            <rect key="frame" x="0.0" y="0.0" width="512" height="274"/>
+            <autoresizingMask key="autoresizingMask"/>
+            <subviews>
+                <tabView focusRingType="none" drawsBackground="NO" initialItem="Mki-TU-J66" translatesAutoresizingMaskIntoConstraints="NO" id="bgp-LO-r6X">
+                    <rect key="frame" x="13" y="10" width="486" height="258"/>
+                    <font key="font" metaFont="system"/>
+                    <tabViewItems>
+                        <tabViewItem label="Control" identifier="" id="Mki-TU-J66">
+                            <view key="view" id="kfk-YV-gM8">
+                                <rect key="frame" x="10" y="33" width="466" height="212"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <subviews>
+                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="GQL-1f-L0Z">
+                                        <rect key="frame" x="184" y="67" width="98" height="19"/>
+                                        <buttonCell key="cell" type="roundRect" title="Exit" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="HWu-WO-w2W">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="cellTitle"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="terminate:" target="-3" id="QHG-zV-aUb"/>
+                                        </connections>
+                                    </button>
+                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qba-yU-p3T">
+                                        <rect key="frame" x="172" y="178" width="122" height="19"/>
+                                        <buttonCell key="cell" type="roundRect" title="Pause Onion Proxy" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="tfX-98-Fjo">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="cellTitle"/>
+                                        </buttonCell>
+                                    </button>
+                                    <button appearanceType="aqua" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PZE-iV-N9p">
+                                        <rect key="frame" x="186" y="91" width="96" height="38"/>
+                                        <buttonCell key="cell" type="square" title="Exit" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="MO4-dl-RHK">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="terminate:" target="-3" id="R8l-k4-Efe"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </view>
+                        </tabViewItem>
+                        <tabViewItem label="Network status" identifier="1" id="C3z-K4-ZIp">
+                            <view key="view" id="pMr-cd-c3B">
+                                <rect key="frame" x="10" y="33" width="466" height="212"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                            </view>
+                        </tabViewItem>
+                        <tabViewItem label="Circuits" identifier="2" id="3c9-0M-MVx">
+                            <view key="view" id="dvB-Tm-Dgh">
+                                <rect key="frame" x="10" y="33" width="466" height="212"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <subviews>
+                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="yIh-FH-9CS">
+                                        <rect key="frame" x="17" y="190" width="92" height="19"/>
+                                        <buttonCell key="cell" type="roundRect" title="Create circuit" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="zMV-gJ-hD6">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="cellTitle"/>
+                                        </buttonCell>
+                                    </button>
+                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="VfV-Pe-Fuu">
+                                        <rect key="frame" x="17" y="184" width="105" height="25"/>
+                                        <buttonCell key="cell" type="square" title="Create circuit" bezelStyle="shadowlessSquare" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="zZT-nc-kvn">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="createCircuit:" target="494" id="msd-eO-nKx"/>
+                                        </connections>
+                                    </button>
+                                    <button appearanceType="aqua" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LhV-om-eul">
+                                        <rect key="frame" x="17" y="149" width="105" height="25"/>
+                                        <buttonCell key="cell" type="square" title="Extend" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="xmZ-fY-CmH">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="extendCircuit:" target="494" id="h7D-ZU-PUZ"/>
+                                        </connections>
+                                    </button>
+                                    <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="dnY-eG-6HW">
+                                        <rect key="frame" x="17" y="114" width="105" height="25"/>
+                                        <buttonCell key="cell" type="square" title="Close circuit" bezelStyle="shadowlessSquare" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="aiw-GE-lPK">
+                                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                            <font key="font" metaFont="system"/>
+                                        </buttonCell>
+                                        <connections>
+                                            <action selector="closeCircuit:" target="494" id="D31-2e-UCW"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </view>
+                        </tabViewItem>
+                    </tabViewItems>
+                </tabView>
+            </subviews>
+            <constraints>
+                <constraint firstAttribute="bottom" secondItem="bgp-LO-r6X" secondAttribute="bottom" constant="20" id="ETp-ts-JBN"/>
+                <constraint firstAttribute="trailing" secondItem="bgp-LO-r6X" secondAttribute="trailing" constant="20" id="Flr-j9-1aY"/>
+                <constraint firstItem="bgp-LO-r6X" firstAttribute="leading" secondItem="5hc-iH-HZu" secondAttribute="leading" constant="20" id="sMz-Xg-3nZ"/>
+                <constraint firstItem="bgp-LO-r6X" firstAttribute="top" secondItem="5hc-iH-HZu" secondAttribute="top" constant="12" id="wMV-fN-urt"/>
+            </constraints>
+            <point key="canvasLocation" x="314" y="223"/>
+        </view>
         <customObject id="-3" userLabel="Application"/>
-        <menu title="AMainMenu" systemMenu="main" id="29">
-            <items>
-                <menuItem title="OnionProxy" id="56">
-                    <menu key="submenu" title="OnionProxy" systemMenu="apple" id="57">
-                        <items>
-                            <menuItem title="About OnionProxy" id="58">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="orderFrontStandardAboutPanel:" target="-2" id="142"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="236">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
-                            <menuItem title="Preferences…" keyEquivalent="," id="129"/>
-                            <menuItem isSeparatorItem="YES" id="143">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
-                            <menuItem title="Services" id="131">
-                                <menu key="submenu" title="Services" systemMenu="services" id="130"/>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="144">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
-                            <menuItem title="Hide OnionProxy" keyEquivalent="h" id="134">
-                                <connections>
-                                    <action selector="hide:" target="-1" id="367"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Hide Others" keyEquivalent="h" id="145">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
-                                <connections>
-                                    <action selector="hideOtherApplications:" target="-1" id="368"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Show All" id="150">
-                                <connections>
-                                    <action selector="unhideAllApplications:" target="-1" id="370"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="149">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
-                            <menuItem title="Quit OnionProxy" keyEquivalent="q" id="136">
-                                <connections>
-                                    <action selector="terminate:" target="-3" id="449"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="View" id="295">
-                    <menu key="submenu" title="View" id="296">
-                        <items>
-                            <menuItem title="Show Toolbar" keyEquivalent="t" id="297">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
-                                <connections>
-                                    <action selector="toggleToolbarShown:" target="-1" id="366"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Customize Toolbar…" id="298">
-                                <connections>
-                                    <action selector="runToolbarCustomizationPalette:" target="-1" id="365"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="Window" id="19">
-                    <menu key="submenu" title="Window" systemMenu="window" id="24">
-                        <items>
-                            <menuItem title="Minimize" keyEquivalent="m" id="23">
-                                <connections>
-                                    <action selector="performMiniaturize:" target="-1" id="37"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Zoom" id="239">
-                                <connections>
-                                    <action selector="performZoom:" target="-1" id="240"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="92">
-                                <modifierMask key="keyEquivalentModifierMask" command="YES"/>
-                            </menuItem>
-                            <menuItem title="Bring All to Front" id="5">
-                                <connections>
-                                    <action selector="arrangeInFront:" target="-1" id="39"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-                <menuItem title="Help" id="490">
-                    <modifierMask key="keyEquivalentModifierMask"/>
-                    <menu key="submenu" title="Help" systemMenu="help" id="491">
-                        <items>
-                            <menuItem title="OnionProxy Help" keyEquivalent="?" id="492">
-                                <connections>
-                                    <action selector="showHelp:" target="-1" id="493"/>
-                                </connections>
-                            </menuItem>
-                        </items>
-                    </menu>
-                </menuItem>
-            </items>
-        </menu>
-        <window title="OnionProxy" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" animationBehavior="default" id="371">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
-            <rect key="contentRect" x="453" y="281" width="512" height="256"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1058"/>
-            <value key="minSize" type="size" width="512" height="256"/>
-            <value key="maxSize" type="size" width="512" height="256"/>
-            <view key="contentView" id="372">
-                <rect key="frame" x="0.0" y="0.0" width="512" height="256"/>
-                <autoresizingMask key="autoresizingMask"/>
-                <subviews>
-                    <tabView translatesAutoresizingMaskIntoConstraints="NO" id="FN0-7c-8WW">
-                        <rect key="frame" x="13" y="10" width="486" height="240"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <font key="font" metaFont="system"/>
-                        <tabViewItems>
-                            <tabViewItem label="Consensus" identifier="1" id="83g-CY-xFo">
-                                <view key="view" id="d9P-Qb-GIa">
-                                    <rect key="frame" x="10" y="33" width="466" height="194"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                    <subviews>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="bG8-bO-eeQ">
-                                            <rect key="frame" x="15" y="165" width="336" height="17"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Total nodes count:" id="WBE-qI-gbL">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="2u2-37-XdK">
-                                            <rect key="frame" x="17" y="17" width="434" height="17"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="current operation" id="5qQ-9k-0OB">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="gLR-JH-jvv">
-                                            <rect key="frame" x="15" y="140" width="336" height="17"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Usable directory servers:" id="TAR-It-bRs">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Xbd-O0-5IL">
-                                            <rect key="frame" x="15" y="115" width="336" height="17"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Usable exit nodes:" id="Bs9-hD-qLh">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
-                                        <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Wxx-68-sbZ">
-                                            <rect key="frame" x="17" y="41" width="60" height="19"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <buttonCell key="cell" type="roundRect" title="Resume" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="hKr-wh-nZR">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="cellTitle"/>
-                                                <connections>
-                                                    <action selector="dispatcherResune:" target="4YT-4M-MUr" id="VpN-KH-XUI"/>
-                                                </connections>
-                                            </buttonCell>
-                                        </button>
-                                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3al-33-5Bf">
-                                            <rect key="frame" x="15" y="90" width="336" height="17"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Usable routers:" id="vah-Sm-uGA">
-                                                <font key="font" metaFont="system"/>
-                                                <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                                            </textFieldCell>
-                                        </textField>
-                                        <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="3q4-Ob-UfE">
-                                            <rect key="frame" x="85" y="41" width="42" height="19"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <buttonCell key="cell" type="roundRect" title="TEST" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="MCO-gZ-cZS">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="cellTitle"/>
-                                            </buttonCell>
-                                            <connections>
-                                                <action selector="TEST:" target="494" id="cNy-Lq-hNS"/>
-                                            </connections>
-                                        </button>
-                                        <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RjO-Qf-QvQ">
-                                            <rect key="frame" x="135" y="41" width="49" height="19"/>
-                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                            <buttonCell key="cell" type="roundRect" title="TEST2" bezelStyle="roundedRect" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="bOq-z5-CCs">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="cellTitle"/>
-                                            </buttonCell>
-                                            <connections>
-                                                <action selector="TEST2:" target="494" id="7f5-L8-eN3"/>
-                                            </connections>
-                                        </button>
-                                    </subviews>
-                                    <constraints>
-                                        <constraint firstAttribute="trailing" secondItem="2u2-37-XdK" secondAttribute="trailing" constant="17" id="LKe-zd-avO"/>
-                                        <constraint firstItem="2u2-37-XdK" firstAttribute="leading" secondItem="d9P-Qb-GIa" secondAttribute="leading" constant="19" id="qJg-Ky-Imc"/>
-                                        <constraint firstAttribute="bottom" secondItem="2u2-37-XdK" secondAttribute="bottom" constant="17" id="srp-Ih-qbn"/>
-                                    </constraints>
-                                </view>
-                            </tabViewItem>
-                            <tabViewItem label="Circuits" identifier="2" id="nfJ-kt-XM3">
-                                <view key="view" id="6E4-gv-Kmu">
-                                    <rect key="frame" x="10" y="33" width="466" height="194"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                                </view>
-                            </tabViewItem>
-                        </tabViewItems>
-                    </tabView>
-                </subviews>
-                <constraints>
-                    <constraint firstAttribute="trailing" secondItem="FN0-7c-8WW" secondAttribute="trailing" constant="20" id="2C1-9t-bJO"/>
-                    <constraint firstAttribute="bottom" secondItem="FN0-7c-8WW" secondAttribute="bottom" constant="20" id="2Hg-fT-bnR"/>
-                    <constraint firstItem="FN0-7c-8WW" firstAttribute="top" secondItem="372" secondAttribute="top" constant="12" id="Tgt-Fy-GdD"/>
-                    <constraint firstItem="FN0-7c-8WW" firstAttribute="leading" secondItem="372" secondAttribute="leading" constant="20" id="wTH-tl-gLc"/>
-                </constraints>
-            </view>
-        </window>
         <customObject id="494" customClass="OPAppDelegate">
             <connections>
-                <outlet property="TEST2" destination="RjO-Qf-QvQ" id="OTz-3p-5k4"/>
-                <outlet property="window" destination="371" id="532"/>
+                <outlet property="popover" destination="2j6-Cy-8AX" id="KgW-Ah-6xU"/>
+                <outlet property="popoverViewController" destination="0Lc-o6-Y2K" id="Hdh-4F-eIa"/>
+                <outlet property="tvTabView" destination="bgp-LO-r6X" id="JF6-zu-Nyr"/>
             </connections>
         </customObject>
-        <customObject id="420" customClass="NSFontManager"/>
-        <customObject id="4YT-4M-MUr" customClass="OPConsensus">
+        <viewController id="0Lc-o6-Y2K" userLabel="Popover View Controller">
             <connections>
-                <outlet property="tfCurrentOperation" destination="2u2-37-XdK" id="Rg1-QC-vwB"/>
-                <outlet property="tfDirServersCount" destination="gLR-JH-jvv" id="ryu-z5-27t"/>
-                <outlet property="tfExitNodesCount" destination="Xbd-O0-5IL" id="LE1-fm-kNQ"/>
-                <outlet property="tfNodesCount" destination="bG8-bO-eeQ" id="jQY-OY-bLN"/>
-                <outlet property="tfRoutersCount" destination="3al-33-5Bf" id="HvQ-hb-fdB"/>
+                <outlet property="view" destination="5hc-iH-HZu" id="u6g-Ux-51E"/>
             </connections>
-        </customObject>
+        </viewController>
+        <popover behavior="t" id="2j6-Cy-8AX">
+            <connections>
+                <outlet property="contentViewController" destination="0Lc-o6-Y2K" id="Rzd-gm-QBm"/>
+            </connections>
+        </popover>
     </objects>
 </document>

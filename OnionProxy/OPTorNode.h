@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "OPObject.h"
+#import "OPTorDirectoryObject.h"
 #import "OPRSAPublicKey.h"
 
 extern NSString * const nodeFingerprintDataKey;
@@ -22,9 +22,23 @@ extern NSString * const nodeVersionStrKey;
 extern NSString * const nodeBandwidthStrKey;
 extern NSString * const nodePolicyStrKey;
 
-@interface OPTorNode : OPObject {
+@class OPTorNode;
+
+typedef enum {
+    OPTorNodeDescriptorReadyEvent,
+    OPTorNodeDescriptorUpdateInProgressEvent,
+    OPTorNodeDescriptorUpdateFailedEvent
+} OPTorNodeEvent;
+
+@protocol OPTorNodeDelegate <NSObject>
+- (void) torNode:(OPTorNode *)node event:(OPTorNodeEvent)event;
+@end
+
+@interface OPTorNode : OPTorDirectoryObject {
     
 }
+
+@property (retain) id<OPTorNodeDelegate>delegate;
 
 @property (readonly) BOOL isValid;
 @property (readonly) BOOL isNamed;
@@ -47,7 +61,7 @@ extern NSString * const nodePolicyStrKey;
 
 @property (readonly) NSDate *lastUpdated;
 
-//@property (readonly) OPRSAPublicKey *signingKey;
+@property (readonly) OPRSAPublicKey *identKey;
 @property (readonly) OPRSAPublicKey *onionKey;
 
 @property (readonly, getter = getIsHasLastDescriptor) BOOL isHasLastDescriptor;

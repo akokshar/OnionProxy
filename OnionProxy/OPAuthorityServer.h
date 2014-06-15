@@ -8,9 +8,9 @@
 
 #import <Foundation/Foundation.h>
 
-#import "OPObject.h"
+#import "OPTorDirectoryObject.h"
 
-@interface OPAuthorityServer : OPObject {
+@interface OPAuthorityServer : OPTorDirectoryObject {
     
 }
 

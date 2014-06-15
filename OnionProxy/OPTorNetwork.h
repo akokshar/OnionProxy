@@ -2,18 +2,17 @@
 //  OPTorNetwork.h
 //  OnionProxy
 //
-//  Created by Koksharov Alexander on 08/02/14.
+//  Created by Koksharov Alexander on 14/06/14.
 //
 //
-
-#import <Foundation/Foundation.h>
 
 #import "OPObject.h"
 
-@interface OPTorNetwork : OPObject {
-    
-}
+@interface OPTorNetwork : OPObject
 
-+ (OPTorNetwork *) torNetwork;
+
+- (void) createCircuit;
+- (void) extendCircuit;
+- (void) closeCircuit;
 
 @end

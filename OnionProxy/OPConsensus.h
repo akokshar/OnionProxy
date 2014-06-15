@@ -8,14 +8,18 @@
 
 #import <Foundation/Foundation.h>
 
-#import "OPObject.h"
+#import "OPTorDirectoryObject.h"
 #import "OPTorNode.h"
 
-@interface OPConsensus : OPObject {
+@protocol OPConsensusDelegate <NSObject>
+- (void) onConsensusUpdatedEvent;
+@end
+
+@interface OPConsensus : OPTorDirectoryObject {
     
 }
 
-+ (OPConsensus *) consensus;
+@property (retain) id <OPConsensusDelegate> delegate;
 
 @property (readonly) NSString *version;
 @property (readonly) NSString *flavor;
@@ -24,19 +28,6 @@
 @property (readonly) NSDate *freshUntil;
 @property (readonly) NSDate *validUntil;
 
-@property (readonly) NSDate *lastUpdated;
-
-@property (readonly, getter = getRandomV2DirNode) OPTorNode *randomV2DirNode;
-@property (readonly, getter = getRandomExitNode) OPTorNode *randomExitNode;
-@property (readonly, getter = getRandomRouterNode) OPTorNode *randomRouterNode;
-
-@property (assign) IBOutlet NSTextField *tfNodesCount;
-@property (assign) IBOutlet NSTextField *tfDirServersCount;
-@property (assign) IBOutlet NSTextField *tfExitNodesCount;
-@property (assign) IBOutlet NSTextField *tfRoutersCount;
-
-@property (assign) IBOutlet NSTextField *tfCurrentOperation;
-
-- (IBAction)dispatcherResune:(id)sender;
+@property (readonly, getter = getNodes) NSDictionary *nodes;
 
 @end

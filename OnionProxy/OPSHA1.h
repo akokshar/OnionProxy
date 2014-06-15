@@ -10,7 +10,7 @@
 
 extern NSUInteger const sha1DigestLen;
 
-@interface OPSHA1 : OPObject {
+@interface OPSHA1 : OPObject <NSCopying> {
     
 }
 

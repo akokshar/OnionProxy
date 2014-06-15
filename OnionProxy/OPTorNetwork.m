@@ -2,50 +2,42 @@
 //  OPTorNetwork.m
 //  OnionProxy
 //
-//  Created by Koksharov Alexander on 08/02/14.
+//  Created by Koksharov Alexander on 14/06/14.
 //
 //
 
 #import "OPTorNetwork.h"
-#import "OPConfig.h"
-#import "OPAuthority.h"
-#import "OPConsensus.h"
+#import "OPTorDirectory.h"
+#import "OPCircuit.h"
 
 @interface OPTorNetwork() {
-    
+
 }
 
-- (void) exploreNetwork;
+@property (retain) OPCircuit *circuit;
+
 @end
 
 @implementation OPTorNetwork
 
-+ (OPTorNetwork *) torNetwork {
-    static OPTorNetwork *instance  = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        instance = [[OPTorNetwork alloc] init];
-    });
-    return instance;
+@synthesize circuit;
+
+- (void) createCircuit {
+    self.circuit = [[OPCircuit alloc] init];
 }
 
-- (id) init {
-    self = [super init];
-    if (self) {
-        [self exploreNetwork];
+- (void) extendCircuit {
+    OPTorNode *node = [[OPTorDirectory directory] getRandomRouter];
+    if (node) {
+        [self.circuit extentTo:node];
     }
-    return self;
+    else {
+        [self logMsg:@"Directory returned no router"];
+    }
 }
 
-- (void) dealloc {
-    [super dealloc];
-}
-
--(void) exploreNetwork {
-//    [self logMsg:@"I have %lu authority servers.", [OPAuthority authority].count];
-//    if ([OPConsensus consensus]) {
-//
-//    }
+- (void) closeCircuit {
+    self.circuit = NULL;
 }
 
 @end

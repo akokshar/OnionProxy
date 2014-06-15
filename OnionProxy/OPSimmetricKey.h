@@ -18,6 +18,9 @@
 - (id) initWithData:(NSData *)data;
 
 - (NSData *) encryptData:(NSData *)data;
+- (void) inplaceEncryptData:(NSMutableData *)data;
+
 - (NSData *) decryptData:(NSData *)data;
+- (void) inplaceDecryptData:(NSMutableData *)data;
 
 @end

@@ -70,7 +70,6 @@ typedef enum {
 
 - (id) init;
 
-//- (BOOL) connectToIp:(NSString *)ip port:(NSUInteger)port;
 - (BOOL) connectToNode:(OPTorNode *)node;
 - (void) disconnect;
 

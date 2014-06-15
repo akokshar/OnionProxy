@@ -10,12 +10,11 @@
 #import "OPSHA1.h"
 #import "OPSHA256.h"
 //#import "OPJobDispatcher.h"
-#import "OPResourceDownloader.h"
 #import "OPAuthority.h"
 #import "OPTorNode.h"
 
 @interface OPConsensus() {
-    NSMutableDictionary *nodes;
+    NSMutableDictionary *torNodes;
     dispatch_queue_t dispatchQueue;
 //    OPJobDispatcher *jobDispatcher;
 }
@@ -29,15 +28,6 @@
 @property (retain) NSDate *validUntil;
 @property (retain) NSDate *lastUpdated;
 
-@property (retain) NSArray *v2DirNodesKeys;
-@property (assign) NSUInteger v2DirNodesIndex;
-
-@property (retain) NSArray *exitNodesKeys;
-@property (assign) NSUInteger exitNodesIndex;
-
-@property (retain) NSArray *routerNodesKeys;
-@property (assign) NSUInteger routerNodesIndex;
-
 - (BOOL) processV3ConsensusDocument:(NSString *)consensusStr;
 - (void) loadConsensusFromCacheFile;
 - (void) updateConsensus;
@@ -45,13 +35,13 @@
 
 - (void) processNodeWithParams:(NSMutableDictionary *)nodeParams;
 - (void) organize;
-- (NSArray *) arrayByShufflingArray:(NSArray *)array;
 
 @end
 
 @implementation OPConsensus
 
-@synthesize v2DirNodesKeys, exitNodesKeys;
+@synthesize delegate;
+
 @synthesize validAfter = _validAfter, freshUntil = _freshUntil, validUntil = _validUntil, lastUpdated;
 @synthesize  version = _version, flavor = _flavor;
 
@@ -67,147 +57,17 @@
     return [OPConfig config].networkStatusURL;
 }
 
-@synthesize randomV2DirNode;
+@synthesize nodes = _nodes;
 
-- (OPTorNode *) getRandomV2DirNode {
-    OPTorNode *result = NULL;
-    
-    @synchronized(self) {
-        if (self.v2DirNodesKeys) {
-            if ([self.v2DirNodesKeys count] > 0) {
-                result = [nodes objectForKey:[self.v2DirNodesKeys objectAtIndex:self.v2DirNodesIndex]];
-                [result retain];
-                
-                self.v2DirNodesIndex++;
-                if (self.v2DirNodesIndex == [self.v2DirNodesKeys count]) {
-                    self.v2DirNodesIndex = 0;
-                    self.v2DirNodesKeys = [self arrayByShufflingArray:self.v2DirNodesKeys];
-                }
-            }
-        }
-    }
-    
-    return [result autorelease];
-}
-
-@synthesize randomExitNode;
-
-- (OPTorNode *) getRandomExitNode {
-    OPTorNode *result = NULL;
-    
-    @synchronized(self) {
-        if (self.exitNodesKeys) {
-            if ([self.exitNodesKeys count] > 0) {
-                result = [nodes objectForKey:[self.exitNodesKeys objectAtIndex:self.exitNodesIndex]];
-                [result retain];
-                
-                self.exitNodesIndex++;
-                if (self.exitNodesIndex == [self.exitNodesKeys count]) {
-                    self.exitNodesIndex = 0;
-                    self.exitNodesKeys = [self arrayByShufflingArray:self.exitNodesKeys];
-                }
-                
-            }
-        }
-    }
-    
-    return [result autorelease];
-}
-
-@synthesize randomRouterNode;
-
-- (OPTorNode *) getRandomRouterNode {
-    OPTorNode *result = NULL;
-    
-    @synchronized(self) {
-        if (self.routerNodesKeys) {
-            if ([self.routerNodesKeys count] > 0) {
-                result = [nodes objectForKey:[self.routerNodesKeys objectAtIndex:self.routerNodesIndex]];
-                [result retain];
-                
-                self.routerNodesIndex++;
-                if (self.routerNodesIndex == [self.routerNodesKeys count]) {
-                    self.routerNodesIndex = 0;
-                    self.routerNodesKeys = [self arrayByShufflingArray:self.routerNodesKeys];
-                }
-                
-            }
-        }
-    }
-    
-    return [result autorelease];
-}
-
-- (NSArray *) arrayByShufflingArray:(NSArray *)array {
-    if (array == NULL || [array count] == 0) {
-        return array;
-    }
-    NSMutableArray *tempArray = [NSMutableArray arrayWithArray:array];
-    for (NSUInteger i = 0; i < [tempArray count] - 1; i++) {
-        NSUInteger j = arc4random() % [tempArray count];
-        [tempArray exchangeObjectAtIndex:i withObjectAtIndex:j];
-    }
-    return tempArray;
+- (NSDictionary *) getNodes {
+    return torNodes;
 }
 
 - (void) organize {
     [self logMsg:@"All nodes processed in: %f seconds", [[NSDate date] timeIntervalSinceDate:self.lastUpdated]];
+    
+    [self.delegate onConsensusUpdatedEvent];
 
-    [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Organizing nodes"]];
-    [self logMsg:@"Organizing nodes. nodes count: %lu", (unsigned long)[nodes count]];
-    
-    NSSet *v2DirNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
-        OPTorNode *node = (OPTorNode *)obj;
-        if ([self.lastUpdated isLessThan:node.lastUpdated]) {
-            return node.isV2Dir && node.isRunning;
-        }
-        return NO;
-    }];
-    
-    @synchronized(self) {
-        self.v2DirNodesKeys = [self arrayByShufflingArray:[v2DirNodesSet allObjects]];
-        self.v2DirNodesIndex = 0;
-        [self.tfDirServersCount setStringValue:[NSString stringWithFormat:@"Directory servers count: %lu", (unsigned long)self.v2DirNodesKeys.count]];
-    }
-    
-    NSSet *exitNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
-        OPTorNode *node = (OPTorNode *)obj;
-        if ([self.lastUpdated isLessThan:node.lastUpdated]) {
-            return node.isExit && node.isRunning;
-        }
-        return NO;
-    }];
-    
-    @synchronized(self) {
-        self.exitNodesKeys = [self arrayByShufflingArray:[exitNodesSet allObjects]];
-        self.exitNodesIndex = 0;
-        [self.tfExitNodesCount setStringValue:[NSString stringWithFormat:@"Exit nodes count: %lu", (unsigned long)self.exitNodesKeys.count]];
-    }
-    
-    NSSet *routerNodesSet = [nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
-        OPTorNode *node = (OPTorNode *)obj;
-        if ([self.lastUpdated isLessThan:node.lastUpdated]) {
-            return node.isFast && node.isRunning && node.isStable;
-        }
-        return NO;
-    }];
-    
-    @synchronized(self) {
-        self.routerNodesKeys = [self arrayByShufflingArray:[routerNodesSet allObjects]];
-        self.routerNodesIndex = 0;
-        [self.tfRoutersCount setStringValue:[NSString stringWithFormat:@"Routers (Fast, Running and Stable) count: %lu", (unsigned long)self.routerNodesKeys.count]];
-    }
-    
-    [self logMsg:@"ready in %f seconds", [[NSDate date] timeIntervalSinceDate:self.lastUpdated]];
-    
-    /* for test only
-    */
-    for (int i = 0; i < 50 && i < self.routerNodesKeys.count; i++) {
-        OPTorNode *oldNode = [nodes objectForKey:[self.routerNodesKeys objectAtIndex:i]];
-        [oldNode prefetchDescriptor];
-    }
-    /*
-     */
     
     self.lastUpdated = [NSDate date];
     [self scheduleUpdate];
@@ -231,20 +91,14 @@
     [nodeParams setObject:descrDigestData forKey:nodeDescriptorDataKey];
 
     @synchronized(self) {
-        node = [nodes objectForKey:fingerprintData];
+        node = [torNodes objectForKey:fingerprintData];
     }
     
     if (node == NULL) {
         node = [[OPTorNode alloc] initWithParams:nodeParams];
         @synchronized(self) {
-            [nodes setObject:node forKey:fingerprintData];
+            [torNodes setObject:node forKey:fingerprintData];
         }
-        [self.tfNodesCount setStringValue:[NSString stringWithFormat:@"Total nodes count: %lu", (unsigned long)nodes.count]];
-        
-        // ***
-        // for test only. do not load descriptors from here as it will get them from authorities on very first load cicle.
-        //[node prefetchDescriptor];
-        // ***
         
         [node release];
     }
@@ -286,7 +140,7 @@
     "directory-signature )(.*)"; // $22 Signatures
     NSRegularExpression *consensusRegEx = [NSRegularExpression regularExpressionWithPattern:consensusPattern options:optionsRegEx error:NULL];
     if (consensusRegEx) {
-        NSArray *consensusMatch = [consensusRegEx matchesInString:consensusStr options:NSMatchingReportProgress range:NSMakeRange(0, [consensusStr length])];
+        NSArray *consensusMatch = [consensusRegEx matchesInString:consensusStr options:NSMatchingAnchored range:NSMakeRange(0, [consensusStr length])];
         
         if ([consensusMatch count] == 1) {
             NSTextCheckingResult *match = [consensusMatch objectAtIndex:0];
@@ -389,7 +243,6 @@
                 _freshUntil = [[NSDate alloc] initWithString:[NSString stringWithFormat:@"%@ +0000", [consensusStr substringWithRange:[match rangeAtIndex:7]]]];
                 _validUntil = [[NSDate alloc] initWithString:[NSString stringWithFormat:@"%@ +0000", [consensusStr substringWithRange:[match rangeAtIndex:8]]]];
                 
-                [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Waiting for nodes to initialize"]];
                 dispatch_barrier_async(dispatchQueue, ^{
                     [self organize];
                 });
@@ -409,7 +262,6 @@
         [self logMsg:@"internal failure (1) while parsing consensus information"];
     }
     
-    [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Processing consensus document done"]];
     [self logMsg:@"Processing consensus document done"];
     
     [pool release];
@@ -432,11 +284,14 @@
         [self logMsg:@"Failed to load consensus"];
         [self scheduleUpdate];
     }
+    [self logMsg:@"loadConsensusFromCacheFile DONE"];
 }
 
 - (void) updateConsensus {
     [self logMsg:@"Updating consensus"];
-    if ([OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5]) {
+
+//    if ([OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5]) {
+    if ([self downloadResource:self.resourcePath to:self.cacheFilePath]) {
         [self loadConsensusFromCacheFile];
     }
     else {
@@ -478,7 +333,6 @@
         NSTimeInterval updateInterval = [updateBefore timeIntervalSinceDate:updateAfter] * ((float)arc4random() / RAND_MAX);
         NSDate *updateTime = [updateAfter dateByAddingTimeInterval:updateInterval];
 
-        [self.tfCurrentOperation setStringValue:[NSString stringWithFormat:@"Consensus valid till %@. Next update at %@", self.validUntil, updateTime]];
         [self logMsg:@"Consensus valid till %@. Next update at %@", self.validUntil, updateTime];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([updateTime timeIntervalSinceNow] * NSEC_PER_SEC)), dispatchQueue, ^{
             [self updateConsensus];
@@ -487,29 +341,26 @@
     }
 }
 
-- (IBAction)dispatcherResune:(id)sender {
-    //[jobDispatcher resume];
-}
-
-- (void) consensusInit {
-    [self logMsg:@"INIT CONSENSUS"];
-    nodes = [[NSMutableDictionary alloc] initWithCapacity:5500];
-//    jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].consensusJobsCount];
-    dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
-
-    self.v2DirNodesKeys = NULL;
-    self.exitNodesKeys = NULL;
-    
-    self.validAfter = NULL;
-    self.freshUntil = NULL;
-    self.validUntil = NULL;
-    self.lastUpdated = NULL;
-
-    dispatch_async(dispatchQueue, ^{
-        [self loadConsensusFromCacheFile];
-    });
-    
-//    [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadConsensusFromCacheFile) object:NULL];
+- (id) init {
+    self = [super init];
+    if (self) {
+        [self logMsg:@"INIT CONSENSUS"];
+        torNodes = [[NSMutableDictionary alloc] initWithCapacity:5500];
+        //    jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].consensusJobsCount];
+        dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
+        
+        self.validAfter = NULL;
+        self.freshUntil = NULL;
+        self.validUntil = NULL;
+        self.lastUpdated = NULL;
+        
+        dispatch_async(dispatchQueue, ^{
+            [self loadConsensusFromCacheFile];
+        });
+        
+        //    [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadConsensusFromCacheFile) object:NULL];
+    }
+    return self;
 }
 
 - (void) dealloc {
@@ -520,55 +371,11 @@
     self.validUntil = NULL;
     self.lastUpdated = NULL;
     
-    self.v2DirNodesKeys = NULL;
-    self.exitNodesKeys = NULL;
-    
     dispatch_release(dispatchQueue);
 //    [jobDispatcher release];
-    [nodes release];
+    [torNodes release];
     
     [super dealloc];
-}
-
-+ (OPConsensus *) consensus {
-    return [[[OPConsensus alloc] init] autorelease];
-}
-
-+ (OPConsensus *) instance {
-    static OPConsensus *instance = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        instance = [[super allocWithZone:NULL] init];
-        [instance consensusInit];
-    });
-    return instance;
-}
-
-+ (id) alloc {
-    return [OPConsensus instance];
-}
-
-+ (id) allocWithZone:(NSZone *)zone {
-    return [OPConsensus instance];
-}
-
-- (id) copyWithZone:(NSZone *)zone {
-    return self;
-}
-
-- (id) retain {
-    return self;
-}
-
-- (NSUInteger) retainCount {
-    return NSUIntegerMax;  //denotes an object that cannot be released
-}
-
-- (oneway void) release {
-}
-
-- (id) autorelease {
-    return self;
 }
 
 @end

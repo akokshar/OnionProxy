@@ -8,11 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
-#import "OPObject.h"
+#import "OPTorDirectoryObject.h"
 #import "OPAuthority.h"
 #import "OPAuthorityServer.h"
 
-@interface OPAuthority : OPObject
+@interface OPAuthority : OPTorDirectoryObject
 
 + (OPAuthority *) authority;
 

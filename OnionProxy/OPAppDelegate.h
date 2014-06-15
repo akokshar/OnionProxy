@@ -11,8 +11,13 @@
 @interface OPAppDelegate : NSObject <NSApplicationDelegate>
 
 @property (assign) IBOutlet NSWindow *window;
+@property (assign) IBOutlet NSTabView *tvTabView;
 
-- (IBAction)TEST:(id)sender;
-- (IBAction)TEST2:(id)sender;
+@property (assign) IBOutlet NSViewController *popoverViewController;
+@property (assign) IBOutlet NSPopover *popover;
+
+- (IBAction)createCircuit:(id)sender;
+- (IBAction)extendCircuit:(id)sender;
+- (IBAction)closeCircuit:(id)sender;
 
 @end

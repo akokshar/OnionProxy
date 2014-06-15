@@ -11,7 +11,6 @@
 #import "OPSHA1.h"
 #import "OPConsensus.h"
 #import "OPJobDispatcher.h"
-#import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
 #import <arpa/inet.h>
@@ -39,17 +38,20 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @property (retain) NSString *ipStr;
 
 @property (retain, getter = getFingerprint) NSData *fingerprint;
-@property (retain) NSData *currentDescriptorDigest;
 @property (retain) NSData *freshDescriptorDigest;
-@property (assign) BOOL isUpdating;
 
-@property (retain) NSDate *lastUpdated;
-
-//@property (retain) OPRSAPublicKey *signingKey;
+// ***  Descriptor data. to be released by releaseDescriptor
+@property (atomic, retain) NSData *currentDescriptorDigest;
+@property (retain) OPRSAPublicKey *identKey;
 @property (retain) OPRSAPublicKey *onionKey;
+// ***
+
+@property (assign) BOOL isUpdating;
+@property (retain) NSDate *lastUpdated;
 
 - (BOOL) processDescriptorDocument:(NSString *)descriptorStr;
 - (void) loadDescriptor;
+- (void) releaseDescriptor;
 
 @end
 
@@ -73,12 +75,13 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @synthesize ip = _ip;
 
 @synthesize fingerprint = _fingerprint;
-@synthesize currentDescriptorDigest = _currentDescriptorDigest;
 @synthesize freshDescriptorDigest = _freshDescriptorDigest;
+@synthesize currentDescriptorDigest = _currentDescriptorDigest;
+@synthesize identKey;
+@synthesize onionKey;
+
 @synthesize lastUpdated = _lastUpdated;
 
-//@synthesize signingKey;
-@synthesize onionKey;
 
 @synthesize cacheFilePath;
 
@@ -137,19 +140,17 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             return NO;
         }
         
-        NSString *signingKeyStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:2]];
-        OPRSAPublicKey *descrSigningKey = [[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:signingKeyStr];
-        //self.signingKey = descrSigningKey;
-        //[descrSigningKey release];
+        NSString *identKeyStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:2]];
+        OPRSAPublicKey *descrIdentKey = [[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:identKeyStr];
+        self.identKey = descrIdentKey;
+        [descrIdentKey release];
         
         NSString *signatureStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:3]];
-        if (![descrSigningKey verifyBase64SignatureStr:signatureStr forDataDigest:self.freshDescriptorDigest]) {
+        if (![self.identKey verifyBase64SignatureStr:signatureStr forDataDigest:self.freshDescriptorDigest]) {
             //[self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
-            [descrSigningKey release];
             [pool release];
             return NO;
         }
-        [descrSigningKey release];
         
         NSString *onionKeyPattern = @"onion-key\\n-----BEGIN RSA PUBLIC KEY-----\\n(.*?)\\n-----END RSA PUBLIC KEY-----";
         NSRegularExpression *onionKeyRegEx = [NSRegularExpression regularExpressionWithPattern:onionKeyPattern options:optionsRegEx error:NULL];
@@ -169,6 +170,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             [self logMsg:@"failed to load key from :\n%@", descriptorStr];
         }
         
+        [self.delegate torNode:self event:OPTorNodeDescriptorReadyEvent];
+        
         //[self logMsg:@"descriptor is OK!!!. So happy :)"];
     }
     else {
@@ -176,6 +179,9 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         [pool release];
         return NO;
     }
+    
+//    [self logMsg:@"%@",rawDescriptorStr];
+//    [self logMsg:@">>>%@", self.identKey.digest];
 
     //[pool drain];
     [pool release];
@@ -185,15 +191,18 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 - (void) prefetchDescriptor {
     
     if (self.freshDescriptorDigest == NULL) {
-        return;
-    }
-
-    if (self.isHasLastDescriptor) {
+        [self.delegate torNode:self event:OPTorNodeDescriptorUpdateFailedEvent];
         return;
     }
 
     @synchronized(self) {
+        if (self.isHasLastDescriptor) {
+            [self.delegate torNode:self event:OPTorNodeDescriptorReadyEvent];
+            return;
+        }
+
         if (self.isUpdating) {
+            [self.delegate torNode:self event:OPTorNodeDescriptorUpdateInProgressEvent];
             return;
         }
 
@@ -219,7 +228,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 }
 
 - (void) updateDescriptor {
-    [OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5];
+//    [OPResourceDownloader downloadResource:self.resourcePath to:self.cacheFilePath timeout:5];
+    [self downloadResource:self.resourcePath to:self.cacheFilePath];
     [self loadDescriptor];
 }
 
@@ -260,12 +270,19 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     }
 }
 
+- (void) releaseDescriptor {
+    @synchronized(self) {
+        self.currentDescriptorDigest = NULL;
+        self.identKey = NULL;
+        self.onionKey = NULL;
+    }
+}
+
 - (void) updateWithParams:(NSDictionary *)nodeParams {
     
-    if (![self.freshDescriptorDigest isEqualToData:[nodeParams objectForKey:nodeDescriptorDataKey]]) {
-        self.freshDescriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
-    }
-    
+//    if (self.freshDescriptorDigest == NULL || ![self.freshDescriptorDigest isEqualToData:[nodeParams objectForKey:nodeDescriptorDataKey]]) {
+    self.freshDescriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
+
     NSString *flags = [nodeParams objectForKey:nodeFlagsStrKey];
     NSArray *array = [flags componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     _isValid = [array containsObject:@"Valid"];
@@ -292,6 +309,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     _orPort = [orPort intValue];
     NSString *dirPort = [nodeParams objectForKey:nodeDirPortStrKey];
     _dirPort = [dirPort intValue];
+//    }
     
     self.lastUpdated = [NSDate date];
 }
@@ -299,6 +317,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 - (id) initWithParams:(NSDictionary *)nodeParams {
     self = [super init];
     if (self) {
+        self.delegate = NULL;
+        
         dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
         
         //self.signingKey = NULL;
@@ -333,7 +353,17 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     
     dispatch_release(dispatchQueue);
 
+    self.delegate = NULL;
+    
     [super dealloc];
+}
+
+- (oneway void) release {
+    [super release];
+
+    if (self.retainCount == 1) {
+        [self releaseDescriptor];
+    }
 }
 
 @end

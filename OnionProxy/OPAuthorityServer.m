@@ -9,7 +9,6 @@
 #import "OPAuthorityServer.h"
 #import "OPConfig.h"
 #import "OPSHA1.h"
-#import "OPResourceDownloader.h"
 #import "OPRSAPublicKey.h"
 
 #import <zlib.h>
@@ -85,12 +84,8 @@
     
     if (!rawKeysData) {
         NSString *resourceUrlStr = [NSString stringWithFormat:@"%@%@.z", [config getAuthorityCerificateFpURL], [config getIdentDgstOfServerAtIndex:configIndex]];
-        [OPResourceDownloader downloadFromAuthorityResource:resourceUrlStr to:cacheFilePath timeout:3];
-//        [OPResourceDownloader downloadFromIp:[config getIpAddrOfServerAtIndex:configIndex]
-//                                        port:(unsigned long)[config getIpPortOfServerAtIndex:configIndex]
-//                                    resource:config.dirKeyCerificateURL
-//                                          to:cacheFilePath
-//                                     timeout:5];
+        [self downloadResource:resourceUrlStr to:cacheFilePath];
+//        [OPResourceDownloader downloadResource:resourceUrlStr to:cacheFilePath timeout:3];
         rawKeysData = [NSData dataWithContentsOfFile:cacheFilePath];
     }
     
