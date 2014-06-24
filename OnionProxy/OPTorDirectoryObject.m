@@ -23,7 +23,7 @@
 
 - (BOOL) downloadFromIp:(NSString *)ip port:(NSUInteger)port resource:(NSString *)resource to:(NSString *)file {
     NSURL *opdirUrl = [NSURL URLWithString:[NSString stringWithFormat:@"opdir://%@:%lu%@", ip, (unsigned long)port, resource]];
-    NSURLRequest *request = [NSURLRequest requestWithURL:opdirUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:3];
+    NSURLRequest *request = [NSURLRequest requestWithURL:opdirUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10];
     NSURLResponse *response;
     NSError *error;
     NSData *resData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];

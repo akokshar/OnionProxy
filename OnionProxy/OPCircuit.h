@@ -8,29 +8,49 @@
 
 #import "OPObject.h"
 #import "OPConnection.h"
+#import "OPStream.h"
 
 typedef enum {
     OPCircuitEventConnected,
+    OPCircuitEventConnectionFailed,
     OPCircuitEventDisconnected,
+    OPCircuitEventClosed,
     OPCircuitEventExtended,
-    OPCircuitEventTruncated,
-    OPCircuitEventTimeout
+    OPCircuitEventExtentionFailed,
+    OPCircuitEventTruncated
 } OPCircuitEvent;
 
 @class OPCircuit;
 
 @protocol OPCircuitDelegate
 - (void) circuit:(OPCircuit *)circuit event:(OPCircuitEvent)event;
-- (void) circuit:(OPCircuit *)circuit receivedData:(NSData *)data forStream:(NSUInteger)streamId;
 @end
 
-@interface OPCircuit : OPObject <OPConnectionDelegate> {
+@interface OPCircuit : OPObject <OPConnectionDelegate, OPStreamCircuitDelegate> {
     
 }
 
+@property (assign) id<OPCircuitDelegate> delegate;
+
+/// Number of TORs the circuit go through
 @property (readonly, getter=getLength) NSUInteger length;
 
-- (void) extentTo:(OPTorNode *)node;
+- (id) initWithDelegate:(id<OPCircuitDelegate>)delegate;
+
+/** 
+ * Extend circuit acynchronously. If command accepted, completionHandler will be called when extention completed.
+ * @return YES if command was accepted, NO otherwise
+ */
+- (BOOL) extentTo:(OPTorNode *)node;
+
+/**
+ * Destroy circuit and close corresponding TCP connection.
+ */
 - (void) close;
+
+/**
+ * Create stream object.
+ */
+- (OPStream *) createStream;
 
 @end

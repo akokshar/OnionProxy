@@ -66,9 +66,8 @@ typedef enum {
 @property (readonly) OPConnectionProtocolVersion protocolVersion;
 @property (readonly) BOOL isConnected;
 
-@property (retain) id <OPConnectionDelegate> delegate;
-
-- (id) init;
++ (OPConnection *) connectionWithDelegate:(id<OPConnectionDelegate>)delegate;
+- (id) initWithDelegate:(id<OPConnectionDelegate>)delegate;
 
 - (BOOL) connectToNode:(OPTorNode *)node;
 - (void) disconnect;

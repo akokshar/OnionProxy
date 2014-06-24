@@ -10,11 +10,11 @@
 
 @interface OPAppDelegate : NSObject <NSApplicationDelegate>
 
+@property (assign) IBOutlet NSMenu *mainMenu;
 @property (assign) IBOutlet NSWindow *window;
-@property (assign) IBOutlet NSTabView *tvTabView;
+@property (assign) IBOutlet NSTabView *tabView;
 
-@property (assign) IBOutlet NSViewController *popoverViewController;
-@property (assign) IBOutlet NSPopover *popover;
+- (IBAction)showMainWindow:(id)sender;
 
 - (IBAction)createCircuit:(id)sender;
 - (IBAction)extendCircuit:(id)sender;

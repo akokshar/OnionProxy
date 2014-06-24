@@ -7,10 +7,13 @@
 //
 
 #import "OPObject.h"
-#import "OPCircuit.h"
+
+@protocol OPStreamCircuitDelegate <NSObject>
+
+@end
 
 @interface OPStream : OPObject
 
-- (id) initWithCircuit:(OPCircuit *)circuit;
+- (id) initWithCircuit:(id<OPStreamCircuitDelegate>)circuit;
 
 @end

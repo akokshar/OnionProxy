@@ -264,4 +264,12 @@ NSUInteger const requiredReadyNodes = 16;
     return self;
 }
 
++ (OPTorNode *) getRandomRouter {
+    return [OPTorDirectory directory].getRandomRouter;
+}
+
++ (OPTorNode *) getRandomDirectory {
+    return [OPTorDirectory directory].getRandomDirectory;
+}
+
 @end

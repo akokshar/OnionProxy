@@ -26,7 +26,7 @@
 + (BOOL)canInitWithRequest:(NSURLRequest *)request {
 //    static NSUInteger requestCount = 0;
 //    NSLog(@"Request #%lu: URL = %@", (unsigned long)requestCount++, request.URL.absoluteString);
-//
+
     if ([request.URL.scheme isEqualToString:@"opdir"]) {
         return YES;
     }

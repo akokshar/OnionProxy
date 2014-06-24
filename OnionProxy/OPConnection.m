@@ -71,6 +71,8 @@ typedef struct {
 @property (assign) OPConnectionHandshakeType handshakeType;
 @property (assign) OPConnectionProtocolVersion protocolVersion;
 
+@property (assign) id <OPConnectionDelegate> delegate;
+
 - (void) startThread;
 - (void) doWait;
 - (void) run;
@@ -209,6 +211,9 @@ typedef struct {
             [self performSelector:@selector(doDisconnect) onThread:connectionThread withObject:NULL waitUntilDone:NO];
             [self stopThread];
             [self logMsg:@"disconnect"];
+        }
+        else {
+            [self logMsg:@"not connected"];
         }
     }
 }
@@ -377,7 +382,7 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
         } break;
             
         case NSStreamEventHasSpaceAvailable: {
-            [self logMsg:@"NSStreamEventHasSpaceAvailable %@", [stream class]];
+            //[self logMsg:@"NSStreamEventHasSpaceAvailable %@", [stream class]];
             
             if (oBuffer.count == 0) {
                 bytesSent = 0;
@@ -402,7 +407,7 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
         } break;
             
         case NSStreamEventHasBytesAvailable: {
-            [self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
+            //[self logMsg:@"NSStreamEventHasBytesAvailable %@", [stream class]];
             uint8_t buf[OPCellSizeMax];
             NSInteger len = 0;
             len = [self.iStream read:buf maxLength:OPCellSizeMax];
@@ -673,11 +678,11 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
     
 }
 
-- (id) init {
+- (id) initWithDelegate:(id<OPConnectionDelegate>)delegate {
     self = [super init];
     if (self) {
         self.isConnected = NO;
-        self.delegate = NULL;
+        self.delegate = delegate;
         
         _circuitID = 0;
         
@@ -704,8 +709,14 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
     [iBuffer release];
     
     self.node = NULL;
+    self.delegate = NULL;
     
     [super dealloc];
+}
+
++ (OPConnection *) connectionWithDelegate:(id<OPConnectionDelegate>)delegate {
+    OPConnection *connection = [[OPConnection alloc] initWithDelegate:delegate];
+    return [connection autorelease];
 }
 
 @end

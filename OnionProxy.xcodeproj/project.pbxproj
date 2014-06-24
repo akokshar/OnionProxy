@@ -36,10 +36,14 @@
 		3450744F18C921C600868069 /* OPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPConnection.m */; };
 		34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */; };
 		34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EBC18EF285300CE02E5 /* OPCSP.m */; };
-		3482A979194218CE00822196 /* OPStatusBarItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 3482A978194218CE00822196 /* OPStatusBarItem.m */; };
-		3482A97B19439EA000822196 /* onionIcons.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3482A97A19439EA000822196 /* onionIcons.icns */; };
 		34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A1F424192898EE00CF6EEF /* OPBase64.m */; };
 		34C1159C1940E40100A7CD44 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341C444A18A621E4002018E1 /* MainMenu.xib */; };
+		34E1A66B1954BE76004B1A4E /* icon_16x16.png in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6661954BE76004B1A4E /* icon_16x16.png */; };
+		34E1A66C1954BE76004B1A4E /* icon_32x32.png in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6671954BE76004B1A4E /* icon_32x32.png */; };
+		34E1A66D1954BE76004B1A4E /* icon_128x128.png in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6681954BE76004B1A4E /* icon_128x128.png */; };
+		34E1A66E1954BE76004B1A4E /* icon_256x256.png in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6691954BE76004B1A4E /* icon_256x256.png */; };
+		34E1A66F1954BE76004B1A4E /* icon_512x512.png in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A66A1954BE76004B1A4E /* icon_512x512.png */; };
+		34E1A6711954BE8F004B1A4E /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6701954BE8F004B1A4E /* icon.icns */; };
 		34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E49E7918B9235200759502 /* OPRSAPublicKey.m */; };
 		34E49E7E18B9347F00759502 /* libcrypto.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7D18B9347F00759502 /* libcrypto.dylib */; };
 		34E49E8018B9EB4500759502 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 34E49E7F18B9EB4500759502 /* libz.dylib */; };
@@ -117,13 +121,16 @@
 		34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDiffieHellman.m; sourceTree = "<group>"; };
 		34511EBB18EF285300CE02E5 /* OPCSP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCSP.h; sourceTree = "<group>"; };
 		34511EBC18EF285300CE02E5 /* OPCSP.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCSP.m; sourceTree = "<group>"; };
-		3482A977194218CE00822196 /* OPStatusBarItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPStatusBarItem.h; sourceTree = "<group>"; };
-		3482A978194218CE00822196 /* OPStatusBarItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPStatusBarItem.m; sourceTree = "<group>"; };
-		3482A97A19439EA000822196 /* onionIcons.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = onionIcons.icns; path = ../onionIcons.icns; sourceTree = "<group>"; };
 		34A1F423192898EE00CF6EEF /* OPBase64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPBase64.h; sourceTree = "<group>"; };
 		34A1F424192898EE00CF6EEF /* OPBase64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPBase64.m; sourceTree = "<group>"; };
 		34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = OnionProxy.entitlements; sourceTree = "<group>"; };
 		34DF24D218E60C1700B705D6 /* libtommath.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libtommath.a; path = "libtommath-0.42.0/libtommath.a"; sourceTree = "<group>"; };
+		34E1A6661954BE76004B1A4E /* icon_16x16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_16x16.png; sourceTree = "<group>"; };
+		34E1A6671954BE76004B1A4E /* icon_32x32.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_32x32.png; sourceTree = "<group>"; };
+		34E1A6681954BE76004B1A4E /* icon_128x128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_128x128.png; sourceTree = "<group>"; };
+		34E1A6691954BE76004B1A4E /* icon_256x256.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_256x256.png; sourceTree = "<group>"; };
+		34E1A66A1954BE76004B1A4E /* icon_512x512.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_512x512.png; sourceTree = "<group>"; };
+		34E1A6701954BE8F004B1A4E /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
 		34E49E7618B9174B00759502 /* libssl.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libssl.dylib; path = usr/lib/libssl.dylib; sourceTree = SDKROOT; };
 		34E49E7818B9235200759502 /* OPRSAPublicKey.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPRSAPublicKey.h; sourceTree = "<group>"; };
 		34E49E7918B9235200759502 /* OPRSAPublicKey.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPRSAPublicKey.m; sourceTree = "<group>"; };
@@ -215,6 +222,7 @@
 		341C443B18A621E4002018E1 /* OnionProxy */ = {
 			isa = PBXGroup;
 			children = (
+				34E1A6651954BE60004B1A4E /* Resources */,
 				34224B3B18C3C04300C75B92 /* OPObject.h */,
 				34224B3C18C3C04300C75B92 /* OPObject.m */,
 				34032C5618B0C30C001FF603 /* OPConfig.h */,
@@ -233,14 +241,11 @@
 				340C6948194C84B100B267B4 /* OPStream.m */,
 				340C694A194C858F00B267B4 /* OPTorNetwork.h */,
 				340C694B194C858F00B267B4 /* OPTorNetwork.m */,
-				3482A977194218CE00822196 /* OPStatusBarItem.h */,
-				3482A978194218CE00822196 /* OPStatusBarItem.m */,
 				341C444718A621E4002018E1 /* OPAppDelegate.h */,
 				341C444818A621E4002018E1 /* OPAppDelegate.m */,
 				341C447318A6355D002018E1 /* OPConfig.plist */,
 				341C444A18A621E4002018E1 /* MainMenu.xib */,
 				34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */,
-				3482A97A19439EA000822196 /* onionIcons.icns */,
 				341C443C18A621E4002018E1 /* Supporting Files */,
 			);
 			path = OnionProxy;
@@ -296,6 +301,19 @@
 				341BE0F6190D3EB600725EDA /* OPTorDirectory.m */,
 			);
 			name = Directory;
+			sourceTree = "<group>";
+		};
+		34E1A6651954BE60004B1A4E /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				34E1A6701954BE8F004B1A4E /* icon.icns */,
+				34E1A6661954BE76004B1A4E /* icon_16x16.png */,
+				34E1A6671954BE76004B1A4E /* icon_32x32.png */,
+				34E1A6681954BE76004B1A4E /* icon_128x128.png */,
+				34E1A6691954BE76004B1A4E /* icon_256x256.png */,
+				34E1A66A1954BE76004B1A4E /* icon_512x512.png */,
+			);
+			name = Resources;
 			sourceTree = "<group>";
 		};
 		34EE82EB18F0691200992506 /* Crypto */ = {
@@ -406,12 +424,17 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34E1A66F1954BE76004B1A4E /* icon_512x512.png in Resources */,
 				34C1159C1940E40100A7CD44 /* MainMenu.xib in Resources */,
 				341C447418A6355D002018E1 /* OPConfig.plist in Resources */,
+				34E1A66C1954BE76004B1A4E /* icon_32x32.png in Resources */,
+				34E1A6711954BE8F004B1A4E /* icon.icns in Resources */,
 				341C444018A621E4002018E1 /* InfoPlist.strings in Resources */,
-				3482A97B19439EA000822196 /* onionIcons.icns in Resources */,
 				341509D3192D0C9D003B4CBE /* OPTorDirectory.xib in Resources */,
 				341C444618A621E4002018E1 /* Credits.rtf in Resources */,
+				34E1A66B1954BE76004B1A4E /* icon_16x16.png in Resources */,
+				34E1A66D1954BE76004B1A4E /* icon_128x128.png in Resources */,
+				34E1A66E1954BE76004B1A4E /* icon_256x256.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -451,7 +474,6 @@
 				34FE94B618E327FA0037CFCF /* OPSimmetricKey.m in Sources */,
 				34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */,
 				3427594318FAF0DA005308D4 /* OPCertificate.m in Sources */,
-				3482A979194218CE00822196 /* OPStatusBarItem.m in Sources */,
 				341BE0F7190D3EB600725EDA /* OPTorDirectory.m in Sources */,
 				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
 				34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */,
@@ -591,12 +613,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
 				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/libtommath-0.42.0",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/Users/0xffff/Documents/Developer/Xcode/OnionProxy/libtommath-0.42.0";
+				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -610,12 +629,9 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "OnionProxy/OnionProxy-Prefix.pch";
 				INFOPLIST_FILE = "OnionProxy/OnionProxy-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/libtommath-0.42.0",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/Users/0xffff/Documents/Developer/Xcode/OnionProxy/libtommath-0.42.0";
+				USER_HEADER_SEARCH_PATHS = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

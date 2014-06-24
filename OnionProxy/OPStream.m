@@ -12,13 +12,13 @@
 
 }
 
-@property (nonatomic, retain) OPCircuit *circuit;
+@property (nonatomic, retain) id<OPStreamCircuitDelegate> circuit;
 
 @end
 
 @implementation OPStream
 
-- (id) initWithCircuit:(OPCircuit *)circuit {
+- (id) initWithCircuit:(id<OPStreamCircuitDelegate>)circuit {
     self = [super init];
     if (self) {
         self.circuit = circuit;

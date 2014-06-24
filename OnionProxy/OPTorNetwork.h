@@ -7,9 +7,11 @@
 //
 
 #import "OPObject.h"
+#import "OPCircuit.h"
 
-@interface OPTorNetwork : OPObject
+@interface OPTorNetwork : OPObject <OPCircuitDelegate> {
 
+}
 
 - (void) createCircuit;
 - (void) extendCircuit;

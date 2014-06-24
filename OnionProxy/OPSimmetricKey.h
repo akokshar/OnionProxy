@@ -12,10 +12,11 @@
     
 }
 
-@property (readonly) NSUInteger keyLength;
+@property (readonly, getter=getKeyLength) NSUInteger keyLength;
 @property (readonly, getter = getKeyData) NSData *keyData;
 
 - (id) initWithData:(NSData *)data;
+- (id) initWithKeyData:(NSData *)key ivData:(NSData *)iv;
 
 - (NSData *) encryptData:(NSData *)data;
 - (void) inplaceEncryptData:(NSMutableData *)data;

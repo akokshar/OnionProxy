@@ -7,14 +7,12 @@
 //
 
 #import "OPAppDelegate.h"
-#import "OPStatusBarItem.h"
 #import "OPTorDirectory.h"
 #import "OPTorDirectoryProtocol.h"
 #import "OPCircuit.h"
 #import "OPTorNetwork.h"
 
-@interface OPAppDelegate() <OPStatusBarItemDelegate> {
-    OPStatusBarItem *statusBarItem;
+@interface OPAppDelegate() {
     OPTorNetwork *torNetwork;
 }
 
@@ -22,35 +20,31 @@
 
 @implementation OPAppDelegate
 
-@synthesize popoverViewController = _popoverViewController;
-@synthesize popover = _popover;
-
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     [NSURLProtocol registerClass:[OPTorDirectoryProtocol class]];
 
     torNetwork = [[OPTorNetwork alloc] init];
 
-    statusBarItem = [[OPStatusBarItem alloc] init];
-    statusBarItem.delegate = self;
-    [[self.tvTabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
+    NSStatusItem *statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    [statusItem retain];
+    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"icon_32x32" ofType:@"png"]];
+    NSSize s = {[NSStatusBar systemStatusBar].thickness - 4, [NSStatusBar systemStatusBar].thickness - 4};
+    [icon setSize:s];
+    statusItem.image = icon;
+    [icon release];
+    statusItem.menu = self.mainMenu;
+    statusItem.highlightMode = YES;
+    [[self.tabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
+
 }
 
 - (void) applicationWillTerminate:(NSNotification *)notification {
-    [statusBarItem release];
     [torNetwork release];
 }
 
-- (void) applicationDidResignActive:(NSNotification *)notification {
-    [statusBarItem deactivate];
-}
-
-- (void) statusBarItemActivated {
-    [self.popover showRelativeToRect:statusBarItem.view.bounds ofView:statusBarItem.view preferredEdge:NSMinYEdge];
+- (IBAction)showMainWindow:(id)sender {
     [NSApp activateIgnoringOtherApps:YES];
-}
-
-- (void) statusBarItemDeactivated {
-    [self.popover close];
+    [self.window makeKeyAndOrderFront:self];
 }
 
 - (IBAction)createCircuit:(id)sender {
