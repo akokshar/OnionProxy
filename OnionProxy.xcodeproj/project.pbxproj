@@ -11,7 +11,6 @@
 		34032C5118AF8CDF001FF603 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34032C5018AF8CDF001FF603 /* Security.framework */; };
 		34032C5818B0C30C001FF603 /* OPConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C5718B0C30C001FF603 /* OPConfig.m */; };
 		340C6946194C299B00B267B4 /* OPTorDirectoryObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 340C6945194C299B00B267B4 /* OPTorDirectoryObject.m */; };
-		340C6949194C84B100B267B4 /* OPStream.m in Sources */ = {isa = PBXBuildFile; fileRef = 340C6948194C84B100B267B4 /* OPStream.m */; };
 		340C694C194C858F00B267B4 /* OPTorNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = 340C694B194C858F00B267B4 /* OPTorNetwork.m */; };
 		341509D2192D0C9D003B4CBE /* OPTorDirectoryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 341509D0192D0C9D003B4CBE /* OPTorDirectoryViewController.m */; };
 		341509D3192D0C9D003B4CBE /* OPTorDirectory.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341509D1192D0C9D003B4CBE /* OPTorDirectory.xib */; };
@@ -73,8 +72,6 @@
 		34032C5718B0C30C001FF603 /* OPConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPConfig.m; sourceTree = "<group>"; };
 		340C6944194C299B00B267B4 /* OPTorDirectoryObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorDirectoryObject.h; sourceTree = "<group>"; };
 		340C6945194C299B00B267B4 /* OPTorDirectoryObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorDirectoryObject.m; sourceTree = "<group>"; };
-		340C6947194C84B100B267B4 /* OPStream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPStream.h; sourceTree = "<group>"; };
-		340C6948194C84B100B267B4 /* OPStream.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPStream.m; sourceTree = "<group>"; };
 		340C694A194C858F00B267B4 /* OPTorNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNetwork.h; sourceTree = "<group>"; };
 		340C694B194C858F00B267B4 /* OPTorNetwork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNetwork.m; sourceTree = "<group>"; };
 		341509CF192D0C9D003B4CBE /* OPTorDirectoryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorDirectoryViewController.h; sourceTree = "<group>"; };
@@ -237,8 +234,6 @@
 				3450744E18C921C600868069 /* OPConnection.m */,
 				344B294A18DE18B900C463AA /* OPCircuit.h */,
 				344B294B18DE18B900C463AA /* OPCircuit.m */,
-				340C6947194C84B100B267B4 /* OPStream.h */,
-				340C6948194C84B100B267B4 /* OPStream.m */,
 				340C694A194C858F00B267B4 /* OPTorNetwork.h */,
 				340C694B194C858F00B267B4 /* OPTorNetwork.m */,
 				341C444718A621E4002018E1 /* OPAppDelegate.h */,
@@ -457,7 +452,6 @@
 				344B294C18DE18B900C463AA /* OPCircuit.m in Sources */,
 				34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */,
 				340C6946194C299B00B267B4 /* OPTorDirectoryObject.m in Sources */,
-				340C6949194C84B100B267B4 /* OPStream.m in Sources */,
 				34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */,
 				341BE0F11908572C00725EDA /* OPSHA1.m in Sources */,
 				341BE0F419085B2400725EDA /* OPSHA256.m in Sources */,

@@ -28,21 +28,12 @@
  * Caller have to retaing returned object in order to keep descriptor.
  */
 - (OPTorNode *) getRandomRouter;
-
-/**
- * Return random cache server
- */
-- (OPTorNode *) getRandomDirectory;
-
-/**
- * Return tor node with descriptor loaded.
- * Caller have to retaing returned object in order to keep descriptor.
- */
 + (OPTorNode *) getRandomRouter;
 
 /**
  * Return random cache server
  */
+- (OPTorNode *) getRandomDirectory;
 + (OPTorNode *) getRandomDirectory;
 
 

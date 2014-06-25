@@ -38,7 +38,7 @@ typedef enum {
 typedef struct {
     uint8 relayCommand;
     uint16 recognized;
-    uint16 streamId;
+    StreamId streamId;
     uint32 digest;
     uint16 length;
     uint8 payload[];
@@ -53,12 +53,19 @@ NSString * const kOPCircuitForwardSimmetricKeyKey = @"ForwardSimmetricKeyKey";
 NSString * const kOPCircuitBackwardSimmetricKeyKey = @"BackwardSimmetricKeyKey";
 NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 
+NSString * const kOPStreamClientKey = @"ClientKey";
+NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
+
 @interface OPCircuit() {
-    BOOL isBusy;
+    //BOOL isBusy;
+    StreamId streamIdCounter;
 }
 
 @property (retain) OPConnection *connection;
 @property (retain) NSMutableArray *nodes;
+@property (retain) NSMutableDictionary *streams;
+
+- (StreamId) generateStreamId;
 
 /**
  *  return handshake data to be sent to the last router
@@ -81,7 +88,7 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 - (BOOL) extendFinishWithResponseData:(NSData *)data;
 
 - (void) relayCommand:(OPRelayCommand)command toNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data;
-//- (void) relayCommand:(OPRelayCommand)command
+- (void) processCommand:(OPRelayCommand)command fromNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data;
 
 @end
 
@@ -96,6 +103,7 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 - (NSData *) handshakeRequestData {
 
     if (self.nodes == NULL || self.nodes.count == 0) {
+        [self logMsg:@"Internal failure. Requested for handshake with undefined node or with node which has no descriptor loaded"];
         return NULL;
     }
 
@@ -114,14 +122,10 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     OPTorNode *node = [lastTor objectForKey:kOPCircuitNodeKey];
     OPDiffieHellman *dh = [[OPDiffieHellman alloc] init];
     OPSimmetricKey *simmetricKey = [[OPSimmetricKey alloc] init];
-    //[self logMsg:@"simmetricKeyLen:%lu", (unsigned long)simmetricKey.keyData.length];
-    
+
     NSData *dhRequest = dh.request;
-    //[self logMsg:@"DhRequestLen:%lu", (unsigned long)dhRequest.length];
-    //[self logMsg:@"node.onionKey.keyLength:%lu",(unsigned long)node.onionKey.keyLength];
     NSUInteger dhPart1Len = node.onionKey.keyLength - node.onionKey.padLength - simmetricKey.keyLength;
-    //[self logMsg:@"dhPart1:%lu", (unsigned long)dhPart1Len];
-    
+
     NSMutableData *payloadPart1Clear = [NSMutableData dataWithCapacity:simmetricKey.keyData.length + dhPart1Len];
     [payloadPart1Clear appendData:simmetricKey.keyData];
     [payloadPart1Clear appendBytes:dhRequest.bytes length:dhPart1Len];
@@ -220,7 +224,7 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 }
 
 - (NSData *) extendRequestData {
-    [self logMsg:@"Extend begin"];
+    [self logMsg:@"Extention begin"];
     
     NSMutableDictionary *lastTor = [self.nodes objectAtIndex:self.nodes.count - 1];
 
@@ -250,10 +254,12 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 }
 
 - (void) relayCommand:(OPRelayCommand)command toNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data {
+    // this check is not needed
     if (data == NULL) {
         return;
     }
 
+    // this is not needed as well
     if (nodeIndex >= self.nodes.count) {
         return;
     }
@@ -265,7 +271,7 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     cell->recognized = 0;
     cell->streamId = CFSwapInt16HostToBig(streamId);
     cell->digest = 0;
-    uint16 dataLen = (uint16)data.length;
+    uint16 dataLen = (uint16)[data length];
     cell->length = CFSwapInt16HostToBig(dataLen);
     [cellData appendData:data];
     [cellData setLength:509];
@@ -295,6 +301,24 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     }
 
     [cellData release];
+}
+
+- (void) processCommand:(OPRelayCommand)command fromNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data {
+    switch (command) {
+        case OPRelayCommanExtended: {
+            if ([self extendFinishWithResponseData:data]) {
+                [self logMsg:@"Circuit extended. current len:%lu", (unsigned long)self.length];
+                [self.delegate circuit:self event:OPCircuitEventExtended];
+            }
+            else {
+                [self.nodes removeObjectAtIndex:self.nodes.count - 1];
+                [self.delegate circuit:self event:OPCircuitEventExtentionFailed];
+            }
+        } break;
+
+        default:
+            break;
+    }
 }
 
 - (void) connection:(OPConnection *)sender onCommand:(OPConnectionCommand)command withData:(NSData *)data {
@@ -329,14 +353,11 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
                         [bDigest updateWithData:cellData];
                         isRecognized = YES;
 
-                        if ([self extendFinishWithResponseData:[NSData dataWithBytes:cell->payload length:cell->length]]) {
-                            [self logMsg:@"Circuit extended. current len:%lu", (unsigned long)self.length];
-                            [self.delegate circuit:self event:OPCircuitEventExtended];
-                        }
-                        else {
-                            [self.nodes removeObjectAtIndex:self.nodes.count - 1];
-                            [self.delegate circuit:self event:OPCircuitEventExtentionFailed];
-                        }
+                        [self processCommand:cell->relayCommand
+                                    fromNode:i
+                                   forStream:CFSwapInt16BigToHost(cell->streamId)
+                                    withData:[NSData dataWithBytes:cell->payload length:CFSwapInt16BigToHost(cell->length)]
+                         ];
                     }
                 }
             }
@@ -354,18 +375,18 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
             if ([command intValue] == OPConnectionCommandCreate) {
                 [firstTor removeObjectForKey:kOPCircuitNodeSentCommand];
 
-                if (![self handshakeFinishWithResponseData:data]) {
+                if ([self handshakeFinishWithResponseData:data]) {
+                    [self logMsg:@"Circuit created"];
+                    [self.delegate circuit:self event:OPCircuitEventExtended];
+                }
+                else {
                     [self logMsg:@"Handshake failed. Terminating connection"];
                     [self.delegate circuit:self event:OPCircuitEventExtentionFailed];
                     [self close];
                 }
-                else {
-                    [self logMsg:@"Circuit created"];
-                    [self.delegate circuit:self event:OPCircuitEventExtended];
-                }
             }
             else {
-                [self logMsg:@"Unexpected 'Created' cell (WTF ???). Terminating connection"];
+                [self logMsg:@"Unexpected 'Created' cell received (WTF ???). Terminating connection"];
                 [self close];
             }
         } break;
@@ -437,8 +458,23 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     [self.delegate circuit:self event:OPCircuitEventClosed];
 }
 
-- (OPStream *) createStream {
-    return [[OPStream alloc] initWithCircuit:self];
+- (StreamId) generateStreamId {
+    return streamIdCounter++;
+}
+
+- (StreamId) addStreamForClient:(id<OPStreamDelegate>)client {
+    StreamId streamId = [self generateStreamId];
+    NSMutableDictionary *stream = [NSMutableDictionary dictionaryWithObject:client forKey:kOPStreamClientKey];
+    [self.streams setObject:stream forKey:[NSNumber numberWithInt:streamId]];
+    return streamId;
+}
+
+- (void) removeStreamWithStreamId:(StreamId)streamId {
+    [self.streams removeObjectForKey:[NSNumber numberWithInt:streamId]];
+}
+
+- (void) connectStreamWithStreamId:(StreamId)streamId toHostWithName:(NSString *)host port:(NSUInteger)port {
+
 }
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate {
@@ -446,6 +482,8 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     self = [super init];
     if (self) {
         self.delegate = delegate;
+        streamIdCounter = 1;
+        self.streams = [NSMutableDictionary dictionaryWithCapacity:10];
         self.nodes = [NSMutableArray arrayWithCapacity:[OPConfig config].circuitLength];
         self.connection = [OPConnection connectionWithDelegate:self];
     }
@@ -456,6 +494,7 @@ NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
     [self logMsg:@"DEALLOC CIRCUIT"];
     self.connection = NULL;
     self.nodes = NULL;
+    self.streams = NULL;
     
     [super dealloc];
 }

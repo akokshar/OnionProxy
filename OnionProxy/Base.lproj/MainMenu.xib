@@ -120,6 +120,27 @@
                                                 <action selector="terminate:" target="-3" id="2TL-FW-pWC"/>
                                             </connections>
                                         </button>
+                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Vok-66-wUM">
+                                            <rect key="frame" x="150" y="180" width="105" height="25"/>
+                                            <buttonCell key="cell" type="square" title="Create Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="inn-mt-eYd">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                        </button>
+                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uPM-fs-sPE">
+                                            <rect key="frame" x="150" y="145" width="105" height="25"/>
+                                            <buttonCell key="cell" type="square" title="Open Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="KZG-v5-neH">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                        </button>
+                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ZW-7l-SU1">
+                                            <rect key="frame" x="150" y="110" width="105" height="25"/>
+                                            <buttonCell key="cell" type="square" title="Close Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="2Cg-9h-wkS">
+                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                                                <font key="font" metaFont="system"/>
+                                            </buttonCell>
+                                        </button>
                                     </subviews>
                                 </view>
                             </tabViewItem>

@@ -8,7 +8,6 @@
 
 #import "OPObject.h"
 #import "OPConnection.h"
-#import "OPStream.h"
 
 typedef enum {
     OPCircuitEventConnected,
@@ -20,13 +19,19 @@ typedef enum {
     OPCircuitEventTruncated
 } OPCircuitEvent;
 
+typedef uint16 StreamId;
+
 @class OPCircuit;
+
+@protocol OPStreamDelegate
+
+@end
 
 @protocol OPCircuitDelegate
 - (void) circuit:(OPCircuit *)circuit event:(OPCircuitEvent)event;
 @end
 
-@interface OPCircuit : OPObject <OPConnectionDelegate, OPStreamCircuitDelegate> {
+@interface OPCircuit : OPObject <OPConnectionDelegate> {
     
 }
 
@@ -49,8 +54,18 @@ typedef enum {
 - (void) close;
 
 /**
- * Create stream object.
+ * Prepare new stream context for specified client.
  */
-- (OPStream *) createStream;
+- (StreamId) addStreamForClient:(id<OPStreamDelegate>)client;
+
+/**
+ * Free resources allocated by <code> -(StreamId) addStreamForClient:(id<OPStreamDelegate>)client;</code>
+ */
+- (void) removeStreamWithStreamId:(StreamId)streamId;
+
+/**
+ * Open stream to a specified Host
+ */
+- (void) connectStreamWithStreamId:(StreamId)streamId toHostWithName:(NSString *)host port:(NSUInteger)port;
 
 @end

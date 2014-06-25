@@ -299,7 +299,7 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
     if (streamEvent == NSStreamEventHasSpaceAvailable) {
         NSNumber *isCerificateChecked = [stream propertyForKey: isCerificateCheckedKey];
         if (!isCerificateChecked || ![isCerificateChecked boolValue]) {
-            [stream setProperty: [NSNumber numberWithBool: YES] forKey: isCerificateCheckedKey];
+            [stream setProperty:[NSNumber numberWithBool:YES] forKey:isCerificateCheckedKey];
         
             NSArray *certs = [stream propertyForKey: (NSString *)kCFStreamPropertySSLPeerCertificates];
             //[self logMsg:@"%@ number of certs = %lu",[stream class], (unsigned long)[certs count]];

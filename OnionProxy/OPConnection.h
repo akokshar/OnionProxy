@@ -35,22 +35,22 @@ typedef enum {
 
 typedef enum {
     OPConnectionCommandPadding = 0,
-    OPConnectionCommandCreate = 1,
-    OPConnectionCommandCreated = 2,
-    OPConnectionCommandRelay = 3,
-    OPConnectionCommandDestroy = 4,
+    OPConnectionCommandCreate = 1, // [handled by OPCircuit]
+    OPConnectionCommandCreated = 2, // [handled by OPCircuit]
+    OPConnectionCommandRelay = 3, // [handled by OPCircuit]
+    OPConnectionCommandDestroy = 4, // [handled by OPCircuit]
     OPConnectionCommandCreateFast = 5,
     OPConnectionCommandCreatedFast = 6,
-    OPConnectionCommandVersions = 7,
-    OPConnectionCommandNetInfo = 8,
+    OPConnectionCommandVersions = 7, // [handled by OPConnection]
+    OPConnectionCommandNetInfo = 8, // [handled by OPConnection]
     OPConnectionCommandRelayEarly = 9,
     OPConnectionCommandCreate2 = 10,
     OPConnectionCommandCreated2 = 11,
     OPConnectionCommandVPadding = 128,
-    OPConnectionCommandCerts = 129,
-    OPConnectionCommandAuthChallenge = 130,
-    OPConnectionCommandAuthenticate = 131,
-    OPConnectionCommandAuthorize = 132
+    OPConnectionCommandCerts = 129, // [handled by OPConnection]
+    OPConnectionCommandAuthChallenge = 130, // [handled by OPConnection]
+    OPConnectionCommandAuthenticate = 131, // [handled by OPConnection]
+    OPConnectionCommandAuthorize = 132 // [handled by OPConnection]
 } OPConnectionCommand;
 
 @protocol OPConnectionDelegate <NSObject>
