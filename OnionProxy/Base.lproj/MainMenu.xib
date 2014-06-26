@@ -126,6 +126,9 @@
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="openStream:" target="494" id="Pg9-xb-CCf"/>
+                                            </connections>
                                         </button>
                                         <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uPM-fs-sPE">
                                             <rect key="frame" x="150" y="145" width="105" height="25"/>
@@ -140,6 +143,9 @@
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
                                             </buttonCell>
+                                            <connections>
+                                                <action selector="closeStream:" target="494" id="hqq-Qy-zIX"/>
+                                            </connections>
                                         </button>
                                     </subviews>
                                 </view>

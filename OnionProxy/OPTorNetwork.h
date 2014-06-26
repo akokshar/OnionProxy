@@ -17,4 +17,8 @@
 - (void) extendCircuit;
 - (void) closeCircuit;
 
+- (void) openStream;
+- (void) closeStream;
+
+
 @end

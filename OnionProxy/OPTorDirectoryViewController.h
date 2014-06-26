@@ -16,6 +16,8 @@
 - (void) setDirNodesCount:(NSInteger) count;
 - (void) setTorFastNodesCount:(NSInteger) count;
 
+- (void) setPreloadedDescriptorsCount:(NSInteger) count;
+
 - (void) setConsensusValidAfter:(NSDate *) date;
 - (void) setConsensusFreshUntil:(NSDate *) date;
 - (void) setConsensusValidUntil:(NSDate *) date;

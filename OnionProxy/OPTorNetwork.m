@@ -75,4 +75,12 @@
     self.c = NULL;
 }
 
+- (void) openStream {
+    [self.c openStreamForClient:NULL];
+}
+
+- (void) closeStream {
+
+}
+
 @end

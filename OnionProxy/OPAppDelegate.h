@@ -20,4 +20,7 @@
 - (IBAction)extendCircuit:(id)sender;
 - (IBAction)closeCircuit:(id)sender;
 
+- (IBAction)openStream:(id)sender;
+- (IBAction)closeStream:(id)sender;
+
 @end

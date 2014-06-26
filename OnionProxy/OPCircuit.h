@@ -9,6 +9,20 @@
 #import "OPObject.h"
 #import "OPConnection.h"
 
+typedef uint16 OPStreamId;
+
+typedef enum {
+    OPStreamEventConnected,
+    OPStreamEventDisconnected
+} OPStreamEvent;
+
+@protocol OPStreamDelegate
+- (void) stream:(OPStreamId)streamId receivedData:(NSData *)data;
+- (void) stream:(OPStreamId)streamId event:(OPStreamEvent)event;
+@end
+
+@class OPCircuit;
+
 typedef enum {
     OPCircuitEventConnected,
     OPCircuitEventConnectionFailed,
@@ -19,21 +33,11 @@ typedef enum {
     OPCircuitEventTruncated
 } OPCircuitEvent;
 
-typedef uint16 StreamId;
-
-@class OPCircuit;
-
-@protocol OPStreamDelegate
-
-@end
-
 @protocol OPCircuitDelegate
 - (void) circuit:(OPCircuit *)circuit event:(OPCircuitEvent)event;
 @end
 
-@interface OPCircuit : OPObject <OPConnectionDelegate> {
-    
-}
+@interface OPCircuit : OPObject <OPConnectionDelegate>
 
 @property (assign) id<OPCircuitDelegate> delegate;
 
@@ -54,18 +58,13 @@ typedef uint16 StreamId;
 - (void) close;
 
 /**
- * Prepare new stream context for specified client.
+ * Create new stream context for specified client.
  */
-- (StreamId) addStreamForClient:(id<OPStreamDelegate>)client;
+- (OPStreamId) openStreamForClient:(id<OPStreamDelegate>)client;
 
 /**
- * Free resources allocated by <code> -(StreamId) addStreamForClient:(id<OPStreamDelegate>)client;</code>
+ * Free resources allocated by <code> - (OPStream *) buildStreamForClient:(id<OPStreamClientDelegate>)client;</code>
  */
-- (void) removeStreamWithStreamId:(StreamId)streamId;
-
-/**
- * Open stream to a specified Host
- */
-- (void) connectStreamWithStreamId:(StreamId)streamId toHostWithName:(NSString *)host port:(NSUInteger)port;
+- (void) closeStream:(OPStreamId)stream;
 
 @end

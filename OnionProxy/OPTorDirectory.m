@@ -96,6 +96,8 @@ NSUInteger const requiredReadyNodes = 16;
             [torReadyNodes removeObjectAtIndex:0];
         }
     }
+
+    [viewController setPreloadedDescriptorsCount:[torReadyNodes count]];
     
     return [node autorelease];
 }
@@ -132,11 +134,18 @@ NSUInteger const requiredReadyNodes = 16;
         [viewController setTorFastNodesCount:self.torNodesKeys.count];
     }
 
+    [self logMsg:@"Nodes updated."];
+
     [self prefetchTorNodeDescriptors];
 }
 
 - (void) prefetchTorNodeDescriptors {
+    [self logMsg:@"Prefetching descriptors"];
     if (!self.torNodesKeys && self.torNodesKeys.count == 0) {
+        return;
+    }
+
+    if (torReadyNodes.count >= requiredReadyNodes) {
         return;
     }
     
@@ -151,6 +160,11 @@ NSUInteger const requiredReadyNodes = 16;
         
         self.torNodesIndex++;
     }
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self prefetchTorNodeDescriptors];
+    });
+
 }
 
 - (void) torNode:(OPTorNode *)node event:(OPTorNodeEvent)event {
@@ -160,6 +174,8 @@ NSUInteger const requiredReadyNodes = 16;
                 [torReadyNodes addObject:node];
 //                [self logMsg:@"have %lu descriptors", (unsigned long)torReadyNodes.count];
             }
+
+            [viewController setPreloadedDescriptorsCount:[torReadyNodes count]];
             
             if ([torReadyNodes count] >= requiredReadyNodes) {
                 [self.delegate onNetworkReady];

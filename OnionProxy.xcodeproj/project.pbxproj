@@ -12,6 +12,7 @@
 		34032C5818B0C30C001FF603 /* OPConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 34032C5718B0C30C001FF603 /* OPConfig.m */; };
 		340C6946194C299B00B267B4 /* OPTorDirectoryObject.m in Sources */ = {isa = PBXBuildFile; fileRef = 340C6945194C299B00B267B4 /* OPTorDirectoryObject.m */; };
 		340C694C194C858F00B267B4 /* OPTorNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = 340C694B194C858F00B267B4 /* OPTorNetwork.m */; };
+		340FD7CF195C56D600CF06C9 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 340FD7CE195C56D600CF06C9 /* Images.xcassets */; };
 		341509D2192D0C9D003B4CBE /* OPTorDirectoryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 341509D0192D0C9D003B4CBE /* OPTorDirectoryViewController.m */; };
 		341509D3192D0C9D003B4CBE /* OPTorDirectory.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341509D1192D0C9D003B4CBE /* OPTorDirectory.xib */; };
 		341576131948B7D0002C4717 /* OPTorDirectoryProtocol.m in Sources */ = {isa = PBXBuildFile; fileRef = 341576121948B7D0002C4717 /* OPTorDirectoryProtocol.m */; };
@@ -54,6 +55,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		340FD7D0195C56EB00CF06C9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 341C442A18A621E4002018E1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 341C443118A621E4002018E1;
+			remoteInfo = OnionProxy;
+		};
+		340FD7D2195C56EB00CF06C9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 341C442A18A621E4002018E1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 341C443118A621E4002018E1;
+			remoteInfo = OnionProxy;
+		};
 		341C445718A621E4002018E1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 341C442A18A621E4002018E1 /* Project object */;
@@ -74,6 +89,7 @@
 		340C6945194C299B00B267B4 /* OPTorDirectoryObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorDirectoryObject.m; sourceTree = "<group>"; };
 		340C694A194C858F00B267B4 /* OPTorNetwork.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorNetwork.h; sourceTree = "<group>"; };
 		340C694B194C858F00B267B4 /* OPTorNetwork.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorNetwork.m; sourceTree = "<group>"; };
+		340FD7CE195C56D600CF06C9 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		341509CF192D0C9D003B4CBE /* OPTorDirectoryViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPTorDirectoryViewController.h; sourceTree = "<group>"; };
 		341509D0192D0C9D003B4CBE /* OPTorDirectoryViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPTorDirectoryViewController.m; sourceTree = "<group>"; };
 		341509D1192D0C9D003B4CBE /* OPTorDirectory.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = OPTorDirectory.xib; sourceTree = "<group>"; };
@@ -241,6 +257,7 @@
 				341C447318A6355D002018E1 /* OPConfig.plist */,
 				341C444A18A621E4002018E1 /* MainMenu.xib */,
 				34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */,
+				340FD7CE195C56D600CF06C9 /* Images.xcassets */,
 				341C443C18A621E4002018E1 /* Supporting Files */,
 			);
 			path = OnionProxy;
@@ -368,6 +385,8 @@
 			);
 			dependencies = (
 				341C445818A621E4002018E1 /* PBXTargetDependency */,
+				340FD7D1195C56EB00CF06C9 /* PBXTargetDependency */,
+				340FD7D3195C56EB00CF06C9 /* PBXTargetDependency */,
 			);
 			name = OnionProxyTests;
 			productName = OnionProxyTests;
@@ -428,6 +447,7 @@
 				341509D3192D0C9D003B4CBE /* OPTorDirectory.xib in Resources */,
 				341C444618A621E4002018E1 /* Credits.rtf in Resources */,
 				34E1A66B1954BE76004B1A4E /* icon_16x16.png in Resources */,
+				340FD7CF195C56D600CF06C9 /* Images.xcassets in Resources */,
 				34E1A66D1954BE76004B1A4E /* icon_128x128.png in Resources */,
 				34E1A66E1954BE76004B1A4E /* icon_256x256.png in Resources */,
 			);
@@ -487,6 +507,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		340FD7D1195C56EB00CF06C9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 341C443118A621E4002018E1 /* OnionProxy */;
+			targetProxy = 340FD7D0195C56EB00CF06C9 /* PBXContainerItemProxy */;
+		};
+		340FD7D3195C56EB00CF06C9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 341C443118A621E4002018E1 /* OnionProxy */;
+			targetProxy = 340FD7D2195C56EB00CF06C9 /* PBXContainerItemProxy */;
+		};
 		341C445818A621E4002018E1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 341C443118A621E4002018E1 /* OnionProxy */;

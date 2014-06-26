@@ -38,7 +38,7 @@ typedef enum {
 typedef struct {
     uint8 relayCommand;
     uint16 recognized;
-    StreamId streamId;
+    uint16 streamId;
     uint32 digest;
     uint16 length;
     uint8 payload[];
@@ -58,14 +58,16 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 @interface OPCircuit() {
     //BOOL isBusy;
-    StreamId streamIdCounter;
+    uint16 streamIdCounter;
 }
 
 @property (retain) OPConnection *connection;
 @property (retain) NSMutableArray *nodes;
+/// tail node index
+@property (readonly, getter=getTailNodeIndex) NSUInteger tailNodeIndex;
 @property (retain) NSMutableDictionary *streams;
 
-- (StreamId) generateStreamId;
+- (uint16) generateStreamId;
 
 /**
  *  return handshake data to be sent to the last router
@@ -98,6 +100,12 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (NSUInteger) getLength {
     return self.nodes.count;
+}
+
+@synthesize tailNodeIndex;
+
+- (NSUInteger) getTailNodeIndex {
+    return self.nodes.count - 1;
 }
 
 - (NSData *) handshakeRequestData {
@@ -255,9 +263,9 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) relayCommand:(OPRelayCommand)command toNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data {
     // this check is not needed
-    if (data == NULL) {
-        return;
-    }
+//    if (data == NULL) {
+//        return;
+//    }
 
     // this is not needed as well
     if (nodeIndex >= self.nodes.count) {
@@ -316,8 +324,9 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
             }
         } break;
 
-        default:
-            break;
+        default: {
+            [self logMsg:@"Not implemented 'Relay' command: %i",command];
+        } break;
     }
 }
 
@@ -458,23 +467,20 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
     [self.delegate circuit:self event:OPCircuitEventClosed];
 }
 
-- (StreamId) generateStreamId {
+- (uint16) generateStreamId {
     return streamIdCounter++;
 }
 
-- (StreamId) addStreamForClient:(id<OPStreamDelegate>)client {
-    StreamId streamId = [self generateStreamId];
-    NSMutableDictionary *stream = [NSMutableDictionary dictionaryWithObject:client forKey:kOPStreamClientKey];
+- (OPStreamId) openStreamForClient:(id<OPStreamDelegate>)client {
+    uint16 streamId = [self generateStreamId];
+    NSMutableDictionary *stream = [NSMutableDictionary dictionaryWithObject:@"NoClient" forKey:kOPStreamClientKey];
     [self.streams setObject:stream forKey:[NSNumber numberWithInt:streamId]];
+    [self relayCommand:OPRelayCommanBeginDir toNode:self.tailNodeIndex forStream:streamId withData:NULL];
     return streamId;
 }
 
-- (void) removeStreamWithStreamId:(StreamId)streamId {
+- (void) closeStream:(OPStreamId)streamId {
     [self.streams removeObjectForKey:[NSNumber numberWithInt:streamId]];
-}
-
-- (void) connectStreamWithStreamId:(StreamId)streamId toHostWithName:(NSString *)host port:(NSUInteger)port {
-
 }
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate {

@@ -126,64 +126,66 @@ typedef struct {
 - (void) run {
     [self logMsg:@"connections thread started"];
 
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-    NSInputStream *iStream = nil;
-    NSOutputStream *oStream = nil;
-    
-    [NSStream getStreamsToHostWithName:self.node.ipStr port:self.node.orPort inputStream:&iStream outputStream:&oStream];
+    @autoreleasepool {
+        //NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+        
+        NSInputStream *iStream = nil;
+        NSOutputStream *oStream = nil;
+        
+        [NSStream getStreamsToHostWithName:self.node.ipStr port:self.node.orPort inputStream:&iStream outputStream:&oStream];
 
-    if (iStream == NULL || oStream == NULL) {
-        [iStream release];
-        [oStream release];
-        return;
+        if (iStream == NULL || oStream == NULL) {
+            [iStream release];
+            [oStream release];
+            return;
+        }
+        
+        self.oStream = oStream;
+        self.iStream = iStream;
+        
+        [iStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
+        [oStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
+
+        NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
+                                  [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
+                                  [NSNumber numberWithBool:NO], kCFStreamSSLValidatesCertificateChain,
+                                  kCFNull, kCFStreamSSLPeerName,
+                                  nil];
+        
+        CFReadStreamSetProperty((CFReadStreamRef)iStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
+        CFWriteStreamSetProperty((CFWriteStreamRef)oStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
+
+        [settings release];
+
+        [iStream setDelegate:self];
+        [oStream setDelegate:self];
+
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+
+        [iStream scheduleInRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+        [oStream scheduleInRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+        
+        [iStream open];
+        [oStream open];
+        
+        self.isConnected = YES;
+        
+        while (self.isRunning && [runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
+        
+        [self.iStream close];
+        [self.oStream close];
+        
+        [self.iStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+        [self.oStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
+        
+        self.iStream = NULL;
+        self.oStream = NULL;
+        
+        [iBuffer setLength:0];
+        [oBuffer removeAllObjects];
+        
+        //[pool release];
     }
-    
-    self.oStream = oStream;
-    self.iStream = iStream;
-    
-    [iStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
-    [oStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
-
-    NSDictionary *settings = [[NSDictionary alloc] initWithObjectsAndKeys:
-                              [NSNumber numberWithBool:YES], kCFStreamSSLAllowsAnyRoot,
-                              [NSNumber numberWithBool:NO], kCFStreamSSLValidatesCertificateChain,
-                              kCFNull, kCFStreamSSLPeerName,
-                              nil];
-    
-    CFReadStreamSetProperty((CFReadStreamRef)iStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
-    CFWriteStreamSetProperty((CFWriteStreamRef)oStream, kCFStreamPropertySSLSettings, (CFTypeRef)settings);
-
-    [settings release];
-
-    [iStream setDelegate:self];
-    [oStream setDelegate:self];
-
-    NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
-
-    [iStream scheduleInRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    [oStream scheduleInRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    
-    [iStream open];
-    [oStream open];
-    
-    self.isConnected = YES;
-    
-    while (self.isRunning && [runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
-    
-    [self.iStream close];
-    [self.oStream close];
-    
-    [self.iStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    [self.oStream removeFromRunLoop:runLoop forMode:NSDefaultRunLoopMode];
-    
-    self.iStream = NULL;
-    self.oStream = NULL;
-    
-    [iBuffer setLength:0];
-    [oBuffer removeAllObjects];
-    
-    [pool release];
     
     [self logMsg:@"connections thread finished"];
 }

@@ -13,6 +13,8 @@ typedef enum {
     rowDirNodesCount,
     rowTorFastNodesCount,
     rowSpace1,
+    rowPreloadedDescriptorsCount,
+    rowSpace2,
     rowConsensusValidAfter,
     rowConsensusValidBefore,
     rowConsensusFreshUntil
@@ -46,6 +48,12 @@ typedef enum {
 - (void) setTorFastNodesCount:(NSInteger) count {
     [values setObject:[NSString stringWithFormat:@"%li", (long)count] forKey:[NSNumber numberWithInt:rowTorFastNodesCount]];
     [self updateValueAtRow:rowTorFastNodesCount];
+}
+
+- (void) setPreloadedDescriptorsCount:(NSInteger) count {
+    [values setObject:[NSString stringWithFormat:@"%li", (long)count] forKey:[NSNumber numberWithInt:rowPreloadedDescriptorsCount]];
+    [self updateValueAtRow:rowPreloadedDescriptorsCount];
+
 }
 
 - (void) setConsensusValidAfter:(NSDate *) date {
@@ -99,6 +107,8 @@ typedef enum {
                  @"Directory servers", [NSNumber numberWithInt:rowDirNodesCount],
                  @"Fast routers", [NSNumber numberWithInt:rowTorFastNodesCount],
                  @"", [NSNumber numberWithInt:rowSpace1],
+                 @"Preloaded descriptors", [NSNumber numberWithInt:rowPreloadedDescriptorsCount],
+                 @"", [NSNumber numberWithInt:rowSpace2],
                  @"Consensus valid after", [NSNumber numberWithInt:rowConsensusValidAfter],
                  @"Consensus valid before", [NSNumber numberWithInt:rowConsensusValidBefore],
                  @"Consensus fresh until", [NSNumber numberWithInt:rowConsensusFreshUntil],
@@ -108,6 +118,8 @@ typedef enum {
                   @"0", [NSNumber numberWithInt:rowDirNodesCount],
                   @"0", [NSNumber numberWithInt:rowTorFastNodesCount],
                   @"", [NSNumber numberWithInt:rowSpace1],
+                  @"0", [NSNumber numberWithInt:rowPreloadedDescriptorsCount],
+                  @"", [NSNumber numberWithInt:rowSpace2],
                   @"", [NSNumber numberWithInt:rowConsensusValidAfter],
                   @"", [NSNumber numberWithInt:rowConsensusValidBefore],
                   @"", [NSNumber numberWithInt:rowConsensusFreshUntil],

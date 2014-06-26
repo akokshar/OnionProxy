@@ -27,7 +27,7 @@
 
     NSStatusItem *statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem retain];
-    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"icon_32x32" ofType:@"png"]];
+    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"icon" ofType:@"icns"]];
     NSSize s = {[NSStatusBar systemStatusBar].thickness - 4, [NSStatusBar systemStatusBar].thickness - 4};
     [icon setSize:s];
     statusItem.image = icon;
@@ -57,6 +57,14 @@
 
 - (IBAction)closeCircuit:(id)sender {
     [torNetwork closeCircuit];
+}
+
+- (IBAction)openStream:(id)sender {
+    [torNetwork openStream];
+}
+
+- (IBAction)closeStream:(id)sender {
+    [torNetwork closeStream];
 }
 
 @end
