@@ -17,7 +17,6 @@
 - (IBAction)showMainWindow:(id)sender;
 
 - (IBAction)createCircuit:(id)sender;
-- (IBAction)extendCircuit:(id)sender;
 - (IBAction)closeCircuit:(id)sender;
 
 - (IBAction)openStream:(id)sender;

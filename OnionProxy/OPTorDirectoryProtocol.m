@@ -109,4 +109,11 @@
     [self.client URLProtocol:self didFailWithError:error];
 }
 
+- (void) dealloc {
+    [self stopResourceTimer];
+    self.connection = NULL;
+
+    [super dealloc];
+}
+
 @end

@@ -91,19 +91,18 @@
     [nodeParams setObject:descrDigestData forKey:nodeDescriptorDataKey];
 
     @synchronized(self) {
-        node = [torNodes objectForKey:fingerprintData];
+        node = [torNodes objectForKey:descrDigestData];
     }
     
     if (node == NULL) {
         node = [[OPTorNode alloc] initWithParams:nodeParams];
         @synchronized(self) {
-            [torNodes setObject:node forKey:fingerprintData];
+            [torNodes setObject:node forKey:descrDigestData];
         }
-        
+
+        [self.delegate consensusEvent:OPConsensusEventNodeAdded forNode:node];
+
         [node release];
-    }
-    else {
-        [node updateWithParams:nodeParams];
     }
 }
 

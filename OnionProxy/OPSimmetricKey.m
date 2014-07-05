@@ -130,6 +130,7 @@
 }
 
 - (void) dealloc {
+    CCCryptorRelease(cryptor);
     self.keyData = NULL;
 //    self.ivData = NULL;
 

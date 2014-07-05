@@ -13,6 +13,7 @@
 #import "OPTorNetwork.h"
 
 @interface OPAppDelegate() {
+    NSStatusItem *statusItem;
     OPTorNetwork *torNetwork;
 }
 
@@ -25,7 +26,7 @@
 
     torNetwork = [[OPTorNetwork alloc] init];
 
-    NSStatusItem *statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+    statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem retain];
     NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"icon" ofType:@"icns"]];
     NSSize s = {[NSStatusBar systemStatusBar].thickness - 4, [NSStatusBar systemStatusBar].thickness - 4};
@@ -39,6 +40,7 @@
 }
 
 - (void) applicationWillTerminate:(NSNotification *)notification {
+    [[NSStatusBar systemStatusBar] removeStatusItem:statusItem];
     [torNetwork release];
 }
 
@@ -49,10 +51,6 @@
 
 - (IBAction)createCircuit:(id)sender {
     [torNetwork createCircuit];
-}
-
-- (IBAction)extendCircuit:(id)sender {
-    [torNetwork extendCircuit];
 }
 
 - (IBAction)closeCircuit:(id)sender {

@@ -31,14 +31,14 @@ typedef enum {
 } OPTorNodeEvent;
 
 @protocol OPTorNodeDelegate <NSObject>
-- (void) torNode:(OPTorNode *)node event:(OPTorNodeEvent)event;
+- (void) node:(OPTorNode *)node event:(OPTorNodeEvent)event;
 @end
 
 @interface OPTorNode : OPTorDirectoryObject {
     
 }
 
-@property (retain) id<OPTorNodeDelegate>delegate;
+@property (assign) id<OPTorNodeDelegate>delegate;
 
 @property (readonly) BOOL isValid;
 @property (readonly) BOOL isNamed;
@@ -66,10 +66,10 @@ typedef enum {
 
 @property (readonly, getter = getIsHasLastDescriptor) BOOL isHasLastDescriptor;
 - (void) prefetchDescriptor;
+- (void) retainDescriptor;
+- (void) releaseDescriptor;
+- (void) clearCashedDescriptor;
 
 - (id) initWithParams:(NSDictionary *)nodeParams;
-- (void) updateWithParams:(NSDictionary *)nodeParams;
-
-- (void) cleanCachedInfo;
 
 @end

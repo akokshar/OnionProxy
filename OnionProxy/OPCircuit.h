@@ -13,6 +13,7 @@ typedef uint16 OPStreamId;
 
 typedef enum {
     OPStreamEventConnected,
+    OPStreamEventDataReceived,
     OPStreamEventDisconnected
 } OPStreamEvent;
 
@@ -24,13 +25,9 @@ typedef enum {
 @class OPCircuit;
 
 typedef enum {
-    OPCircuitEventConnected,
-    OPCircuitEventConnectionFailed,
-    OPCircuitEventDisconnected,
-    OPCircuitEventClosed,
     OPCircuitEventExtended,
-    OPCircuitEventExtentionFailed,
-    OPCircuitEventTruncated
+    OPCircuitEventTruncated,
+    OPCircuitEventClosed,
 } OPCircuitEvent;
 
 @protocol OPCircuitDelegate
@@ -41,16 +38,12 @@ typedef enum {
 
 @property (assign) id<OPCircuitDelegate> delegate;
 
-/// Number of TORs the circuit go through
-@property (readonly, getter=getLength) NSUInteger length;
+/// Number of TORs the circuit go through. Circuit is extended or truncated when this property modified.
+@property (getter=getLength, setter=setLength:) NSUInteger length;
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate;
 
-/** 
- * Extend circuit acynchronously. If command accepted, completionHandler will be called when extention completed.
- * @return YES if command was accepted, NO otherwise
- */
-- (BOOL) extentTo:(OPTorNode *)node;
+- (void) appendNode:(OPTorNode *)node;
 
 /**
  * Destroy circuit and close corresponding TCP connection.

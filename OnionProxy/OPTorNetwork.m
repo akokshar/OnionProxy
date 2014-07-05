@@ -15,42 +15,26 @@
 }
 
 @property (retain) OPCircuit *c;
+@property (assign) OPStreamId s;
 
 @end
 
 @implementation OPTorNetwork
 
 @synthesize c;
+@synthesize s;
 
 - (void) circuit:(OPCircuit *)circuit event:(OPCircuitEvent)event {
     switch (event) {
-        case OPCircuitEventConnected: {
-
+        case OPCircuitEventExtended: {
+            [self logMsg:@"Circuit ready!. (LEN=%lu)", (unsigned long)circuit.length];
         } break;
 
-        case OPCircuitEventConnectionFailed: {
-
-        } break;
-
-        case OPCircuitEventDisconnected: {
+        case OPCircuitEventTruncated: {
 
         } break;
 
         case OPCircuitEventClosed: {
-
-        } break;
-
-        case OPCircuitEventExtended: {
-            if (circuit.length < 3) {
-                [circuit extentTo:[[OPTorDirectory directory] getRandomRouter]];
-            }
-        } break;
-
-        case OPCircuitEventExtentionFailed: {
-
-        } break;
-
-        case OPCircuitEventTruncated: {
 
         } break;
     }
@@ -58,16 +42,7 @@
 
 - (void) createCircuit {
     self.c = [[[OPCircuit alloc] initWithDelegate:self] autorelease];
-}
-
-- (void) extendCircuit {
-    OPTorNode *node = [[OPTorDirectory directory] getRandomRouter];
-    if (node) {
-        [self.c extentTo:node];
-    }
-    else {
-        [self logMsg:@"Directory returned no router"];
-    }
+    self.c.length = 3;
 }
 
 - (void) closeCircuit {
@@ -76,11 +51,12 @@
 }
 
 - (void) openStream {
-    [self.c openStreamForClient:NULL];
+    self.c.length++;
+//    self.s = [self.c openStreamForClient:NULL];
 }
 
 - (void) closeStream {
-
+    [self.c closeStream:self.s];
 }
 
 @end

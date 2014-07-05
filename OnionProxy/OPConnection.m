@@ -196,27 +196,25 @@ typedef struct {
 }
 
 - (void) stopThread {
-    if ([connectionThread isExecuting]) {
+    if (self.isRunning) {
         [self performSelector:@selector(doStopThread) onThread:connectionThread withObject:NULL waitUntilDone:YES];
     }
 }
 
 - (void) doDisconnect {
-    self.isConnected = NO;
-    [self.delegate connection:self onEvent:OPConnectionEventDisconnected];
     [self logMsg:@"doDisconnect"];
 }
 
 - (void) disconnect {
-    @synchronized(self) {
-        if (self.isConnected) {
-            [self performSelector:@selector(doDisconnect) onThread:connectionThread withObject:NULL waitUntilDone:NO];
-            [self stopThread];
-            [self logMsg:@"disconnect"];
-        }
-        else {
-            [self logMsg:@"not connected"];
-        }
+    if (self.isConnected == YES) {
+        self.isConnected = NO;
+        //[self performSelector:@selector(doDisconnect) onThread:connectionThread withObject:NULL waitUntilDone:NO];
+        [self stopThread];
+        [self.delegate connection:self onEvent:OPConnectionEventDisconnected];
+        [self logMsg:@"disconnect"];
+    }
+    else {
+        [self logMsg:@"not connected"];
     }
 }
 
@@ -618,9 +616,9 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
             NSData *cert1Data = [[NSData alloc] initWithBytes:cert1->certData length:cert1Len];
             NSData *cert2Data = [[NSData alloc] initWithBytes:cert2->certData length:cert2Len];
             
-            SecCertificateRef secCertificate1 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
-            SecCertificateRef secCertificate2 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
-            
+//            SecCertificateRef secCertificate1 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
+//            SecCertificateRef secCertificate2 = SecCertificateCreateWithData(NULL, (CFDataRef)cert1Data);
+
             [cert1Data release];
             [cert2Data release];
 

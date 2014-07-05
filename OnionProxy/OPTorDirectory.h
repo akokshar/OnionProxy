@@ -24,17 +24,22 @@
 + (OPTorDirectory *) directory;
 
 /** 
- * Return tor node with descriptor loaded. 
+ * Provide random TOR node with descriptor loaded. Guaranteed not to return NULL node;
  * Caller have to retaing returned object in order to keep descriptor.
  */
-- (OPTorNode *) getRandomRouter;
-+ (OPTorNode *) getRandomRouter;
+- (void) getRandomRouterAsync:(void (^)(OPTorNode *node))completionHandler;
 
 /**
  * Return random cache server
  */
 - (OPTorNode *) getRandomDirectory;
 + (OPTorNode *) getRandomDirectory;
+
+/**
+ * Provide random Cache node with descriptor loaded. Guaranteed not to return NULL node;
+ * Caller have to retaing returned object in order to keep descriptor.
+ */
+- (void) getRandomDirectoryAsync:(void (^)(OPTorNode *node))completionHandler;
 
 
 @end

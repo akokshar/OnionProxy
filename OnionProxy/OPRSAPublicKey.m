@@ -6,34 +6,20 @@
 //
 //
 
-// if nothing defined, use SecTransform
-//#define RSA_USE_OSSL
-//#define RSA_USE_CSSM
-
 #import "OPRSAPublicKey.h"
-#import "OPCSP.h"
+//#import "OPCSP.h"
 #import "OPSHA1.h"
 #import <Security/Security.h>
 #import <Security/SecEncryptTransform.h>
 
-#ifdef RSA_USE_OSSL
-#import <openssl/rsa.h>
-#import <openssl/pem.h>
-#endif
-
 @interface OPRSAPublicKey() {
     CFArrayRef keyItems;
     SecKeyRef _secKey;
-#ifdef RSA_USE_OSSL
-    RSA *osslPublicKey;
-#endif
 }
 
-//@property (readonly) NSData *digest;
 @property (readonly, getter = getSecKeyRef) SecKeyRef secKey;
 
 - (NSData *) cssmEncryptData:(NSData *)data;
-- (NSData *) osslEncryptData:(NSData *)data;
 
 @end
 
@@ -64,7 +50,6 @@
         }
     }
     return NULL;
-//    return _secKey;
 }
 
 - (id) initWithBase64DerEncodingStr:(NSString *)keyEncoding {
@@ -80,10 +65,6 @@
             
             _padLength = 42; // OAEP padding len
             
-#ifdef RSA_USE_OSSL
-            unsigned char *keyBytes = (unsigned char *)keyData.bytes;
-            osslPublicKey =  d2i_RSAPublicKey(NULL, (const unsigned char **)&keyBytes, keyData.length);
-#endif
             keyItems = NULL;
 
             SecItemImportExportKeyParameters params = {};
@@ -109,6 +90,9 @@
 
 - (void) dealloc {
     //[self logMsg:@"dealloc key"];
+
+    /*** !!! Memory leak !!! ***/
+    /***  !  Fix it later !  ***/
     if (keyItems) {
         CFRelease(keyItems);
     }
@@ -189,15 +173,9 @@
 }
 
 - (NSData *) encryptData:(NSData *)data {
-    
-#ifdef RSA_USE_OSSL
-    return [self osslEncryptData:data];
-#endif
-    
-#ifdef RSA_USE_CSSM
-    return [self cssmEncryptData:data];
-#endif
-    
+    // CSSM does not support OAEP padding? Is always crashing :-(
+    //return [self cssmEncryptData:data];
+
     SecTransformRef encryptTransform = SecEncryptTransformCreate(self.secKey, NULL);
     if (!encryptTransform) {
         return NULL;
@@ -209,36 +187,7 @@
     NSData *encryptedData = SecTransformExecute(encryptTransform, NULL);
     CFRelease(encryptTransform);
     
-    //[self logMsg:@"RSAPublicKey encryption result from Transform = \n'%@'", encryptedData];
-    
     return [encryptedData autorelease];
-}
-
-- (NSData *) osslEncryptData:(NSData *)data {
-    NSData *encryptedData = NULL;
-
-#ifdef RSA_USE_OSSL
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
-    int keylen = RSA_size(osslPublicKey);
-    
-    if (data.length >= keylen - 41 ) {
-        [self logMsg:@"Too long data block passed for RSA encription"];
-        return NULL;
-    }
-    
-    uint8_t buf[keylen];
-    
-    int encryptedLen = RSA_public_encrypt((int)data.length, data.bytes, buf, osslPublicKey, RSA_PKCS1_OAEP_PADDING);
-    [self logMsg:@"RSAPublicKey encryption result from OpenSSL = \n'%@'", [NSData dataWithBytes:buf length:encryptedLen]];
-    
-    encryptedData = [NSData dataWithBytes:buf length:encryptedLen];
-    
-#pragma clang diagnostic pop
-#endif
-    
-    return encryptedData;
 }
 
 - (NSData *) cssmEncryptData:(NSData *)data {
@@ -279,7 +228,7 @@
     }
 
     CSSM_CC_HANDLE cch;
-    crtn = CSSM_CSP_CreateAsymmetricContext([OPCSP instance].handle, CSSM_ALGID_RSA, access_cred, cssm_key, CSSM_PADDING_PKCS1, &cch);
+    crtn = CSSM_CSP_CreateAsymmetricContext(csp, CSSM_ALGID_RSA, access_cred, cssm_key, CSSM_PADDING_PKCS1, &cch);
     if (crtn) {
         CFStringRef errorMsg = SecCopyErrorMessageString(crtn, NULL);
         [self logMsg:@"SecKeyGetCSPHandle failed '%@'", errorMsg];

@@ -11,8 +11,16 @@
 #import "OPTorDirectoryObject.h"
 #import "OPTorNode.h"
 
+@class OPConsensus;
+
+typedef enum {
+    OPConsensusEventNodeAdded,
+    OPConsensusEventNodeDeleted
+} OPConsensusNodeEvent;
+
 @protocol OPConsensusDelegate <NSObject>
 - (void) onConsensusUpdatedEvent;
+- (void) consensusEvent:(OPConsensusNodeEvent)event forNode:(OPTorNode *)node;
 @end
 
 @interface OPConsensus : OPTorDirectoryObject {

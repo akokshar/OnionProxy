@@ -14,7 +14,6 @@
 }
 
 - (void) createCircuit;
-- (void) extendCircuit;
 - (void) closeCircuit;
 
 - (void) openStream;
