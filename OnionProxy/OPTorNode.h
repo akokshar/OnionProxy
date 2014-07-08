@@ -64,7 +64,6 @@ typedef enum {
 @property (readonly) OPRSAPublicKey *identKey;
 @property (readonly) OPRSAPublicKey *onionKey;
 
-@property (readonly, getter = getIsHasLastDescriptor) BOOL isHasLastDescriptor;
 - (void) prefetchDescriptor;
 - (void) retainDescriptor;
 - (void) releaseDescriptor;

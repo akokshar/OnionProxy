@@ -52,4 +52,9 @@
     }
 }
 
+- (NSData *) downloadResource:(NSString *)resource withCacheFile:(NSString *)file {
+    [self downloadResource:resource to:file];
+    return [NSData dataWithContentsOfFile:file];
+}
+
 @end

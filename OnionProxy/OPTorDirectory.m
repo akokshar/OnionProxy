@@ -69,7 +69,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     return [OPTorDirectory directory].getRandomDirectory;
 }
 
-- (void) getRandomDirectoryAsync:(void (^)(OPTorNode *node))completionHandler {
+- (void) getRandomDirRouterAsync:(void (^)(OPTorNode *node))completionHandler {
     dispatch_async(torNodeRequestQueue, ^{
         dispatch_semaphore_wait(torReadyCacheSemaphore, DISPATCH_TIME_FOREVER);
         OPTorNode *readyNode = NULL;
@@ -79,7 +79,9 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
             [torReadyCaches removeObjectAtIndex:0];
         }
         [viewController setPreloadedDescriptorsCount:[torReadyCaches count] + [torReadyRouters count]];
-        completionHandler([readyNode autorelease]);
+        completionHandler(readyNode);
+        [readyNode releaseDescriptor];
+        [readyNode release];
     });
 }
 
@@ -93,7 +95,9 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
             [torReadyRouters removeObjectAtIndex:0];
         }
         [viewController setPreloadedDescriptorsCount:[torReadyCaches count] + [torReadyRouters count]];
-        completionHandler([readyNode autorelease]);
+        completionHandler(readyNode);
+        [readyNode releaseDescriptor];
+        [readyNode release];
     });
 }
 

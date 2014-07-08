@@ -408,6 +408,8 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
             NSMutableDictionary *firstTor = [self.nodes objectAtIndex:0];
             [firstTor setObject:[NSNumber numberWithInt:OPConnectionCommandCreate] forKey:kOPCircuitNodeSentCommand];
             [self.connection sendCommand:OPConnectionCommandCreate withData:[self handshakeRequestData]];
+            OPTorNode *node = (OPTorNode *)[firstTor objectForKey:kOPCircuitNodeKey];
+            [node releaseDescriptor];
         } break;
         
         case OPConnectionEventConnectionFailed: {
@@ -425,6 +427,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 - (void) extendToNode:(OPTorNode *)node {
     [self.nodes addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:node, kOPCircuitNodeKey, nil]];
     if (self.length == 1) {
+        [node retainDescriptor];
         [self.connection connectToNode:node];
     }
     else {
@@ -492,6 +495,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) close {
     [self.connection disconnect];
+
     [self.nodes removeAllObjects];
     [self.delegate circuit:self event:OPCircuitEventClosed];
 }
@@ -529,7 +533,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) dealloc {
     [self logMsg:@"DEALLOC CIRCUIT"];
-    [self close]; // important!!!
+    [self close]; // important!!! needed to close streams as they retain its delegate.
     self.connection = NULL;
     self.nodes = NULL;
     self.streams = NULL;

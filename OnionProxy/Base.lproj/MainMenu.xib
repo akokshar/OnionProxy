@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6154.21" systemVersion="14A261i" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6185.7" systemVersion="14A283o" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6154.21"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6185.7"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -44,12 +44,13 @@
             <point key="canvasLocation" x="64.5" y="-27.5"/>
         </menu>
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" animationBehavior="default" id="mM0-re-THz">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="617" y="436" width="480" height="270"/>
+            <rect key="contentRect" x="694" y="416" width="480" height="270"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1366" height="745"/>
+            <value key="minSize" type="size" width="480" height="270"/>
             <view key="contentView" id="Osn-zR-MtL">
-                <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
+                <rect key="frame" x="0.0" y="5" width="480" height="270"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <tabView focusRingType="none" drawsBackground="NO" initialItem="En4-xI-QvV" translatesAutoresizingMaskIntoConstraints="NO" id="Sl4-NZ-lsd">
@@ -160,7 +161,7 @@
                     <constraint firstItem="Sl4-NZ-lsd" firstAttribute="top" secondItem="Osn-zR-MtL" secondAttribute="top" constant="12" id="u3K-Df-KKq"/>
                 </constraints>
             </view>
-            <point key="canvasLocation" x="260" y="230"/>
+            <point key="canvasLocation" x="202" y="230"/>
         </window>
     </objects>
 </document>

@@ -35,6 +35,7 @@
 		3450744F18C921C600868069 /* OPConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 3450744E18C921C600868069 /* OPConnection.m */; };
 		34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */; };
 		34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EBC18EF285300CE02E5 /* OPCSP.m */; };
+		348FDF46196830F2007D40B0 /* OPDirectoryStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 348FDF45196830F2007D40B0 /* OPDirectoryStore.m */; };
 		34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A1F424192898EE00CF6EEF /* OPBase64.m */; };
 		34C1159C1940E40100A7CD44 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341C444A18A621E4002018E1 /* MainMenu.xib */; };
 		34E1A6711954BE8F004B1A4E /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6701954BE8F004B1A4E /* icon.icns */; };
@@ -126,6 +127,8 @@
 		34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDiffieHellman.m; sourceTree = "<group>"; };
 		34511EBB18EF285300CE02E5 /* OPCSP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPCSP.h; sourceTree = "<group>"; };
 		34511EBC18EF285300CE02E5 /* OPCSP.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCSP.m; sourceTree = "<group>"; };
+		348FDF44196830F2007D40B0 /* OPDirectoryStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPDirectoryStore.h; sourceTree = "<group>"; };
+		348FDF45196830F2007D40B0 /* OPDirectoryStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDirectoryStore.m; sourceTree = "<group>"; };
 		34A1F423192898EE00CF6EEF /* OPBase64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPBase64.h; sourceTree = "<group>"; };
 		34A1F424192898EE00CF6EEF /* OPBase64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPBase64.m; sourceTree = "<group>"; };
 		34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = OnionProxy.entitlements; sourceTree = "<group>"; };
@@ -230,8 +233,6 @@
 				34E7E00E18CD96F800599860 /* OPJobDispatcher.m */,
 				34EE82EB18F0691200992506 /* Crypto */,
 				346651C318D8C58100C8F26B /* Directory */,
-				341576111948B7D0002C4717 /* OPTorDirectoryProtocol.h */,
-				341576121948B7D0002C4717 /* OPTorDirectoryProtocol.m */,
 				3450744D18C921C600868069 /* OPConnection.h */,
 				3450744E18C921C600868069 /* OPConnection.m */,
 				344B294A18DE18B900C463AA /* OPCircuit.h */,
@@ -283,6 +284,8 @@
 			children = (
 				340C6944194C299B00B267B4 /* OPTorDirectoryObject.h */,
 				340C6945194C299B00B267B4 /* OPTorDirectoryObject.m */,
+				348FDF44196830F2007D40B0 /* OPDirectoryStore.h */,
+				348FDF45196830F2007D40B0 /* OPDirectoryStore.m */,
 				34032C4B18AF7296001FF603 /* OPAuthorityServer.h */,
 				34032C4C18AF7296001FF603 /* OPAuthorityServer.m */,
 				34FD48F918A9447F0027B524 /* OPAuthority.h */,
@@ -296,6 +299,8 @@
 				341509D1192D0C9D003B4CBE /* OPTorDirectory.xib */,
 				341BE0F5190D3EB600725EDA /* OPTorDirectory.h */,
 				341BE0F6190D3EB600725EDA /* OPTorDirectory.m */,
+				341576111948B7D0002C4717 /* OPTorDirectoryProtocol.h */,
+				341576121948B7D0002C4717 /* OPTorDirectoryProtocol.m */,
 			);
 			name = Directory;
 			sourceTree = "<group>";
@@ -464,6 +469,7 @@
 				3427594318FAF0DA005308D4 /* OPCertificate.m in Sources */,
 				341BE0F7190D3EB600725EDA /* OPTorDirectory.m in Sources */,
 				341C444918A621E4002018E1 /* OPAppDelegate.m in Sources */,
+				348FDF46196830F2007D40B0 /* OPDirectoryStore.m in Sources */,
 				34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */,
 				34224B3A18C24ABE00C75B92 /* OPConsensus.m in Sources */,
 				34224B3D18C3C04300C75B92 /* OPObject.m in Sources */,

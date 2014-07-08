@@ -39,18 +39,17 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @property (retain) NSString *ipStr;
 
 @property (retain, getter = getFingerprint) NSData *fingerprint;
-@property (retain) NSData *freshDescriptorDigest;
+
+@property (retain) NSData *descriptorDigest;
+@property (getter=getDescriptorRetainCount, setter=setDescriptorRetainCount:) NSUInteger descriptorRetainCount;
 
 // ***  Descriptor data. to be released by releaseDescriptor
-@property (atomic, retain) NSData *currentDescriptorDigest;
 @property (retain) OPRSAPublicKey *identKey;
 @property (retain) OPRSAPublicKey *onionKey;
 // ***
 
 @property (assign) BOOL isUpdating;
 @property (retain) NSDate *lastUpdated;
-
-@property (getter=getDescriptorRetainCount, setter=setDescriptorRetainCount:) NSUInteger descriptorRetainCount;
 
 - (void) initializeWithParams:(NSDictionary *)nodeParams;
 
@@ -79,13 +78,12 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @synthesize ip = _ip;
 
 @synthesize fingerprint = _fingerprint;
-@synthesize freshDescriptorDigest = _freshDescriptorDigest;
-@synthesize currentDescriptorDigest = _currentDescriptorDigest;
+@synthesize descriptorDigest = _descriptorDigest;
+
 @synthesize identKey;
 @synthesize onionKey;
 
 @synthesize lastUpdated = _lastUpdated;
-
 
 @synthesize cacheFilePath;
 
@@ -105,14 +103,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 //        return @"";
 //    }
 //    else {
-        return [NSString stringWithFormat:@"/tor/server/d/%@.z", [self hexStringFromData:self.freshDescriptorDigest]];
+        return [NSString stringWithFormat:@"/tor/server/d/%@.z", [self hexStringFromData:self.descriptorDigest]];
 //    }
-}
-
-@synthesize isHasLastDescriptor;
-
-- (BOOL) getIsHasLastDescriptor {
-    return (self.currentDescriptorDigest == self.freshDescriptorDigest);
 }
 
 @synthesize descriptorRetainCount = _descriptorRetainCount;
@@ -126,7 +118,6 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 
     if (_descriptorRetainCount == 0) {
         dispatch_semaphore_wait(descriptorUpdateSemaphore, DISPATCH_TIME_FOREVER);
-        self.currentDescriptorDigest = NULL;
         self.identKey = NULL;
         self.onionKey = NULL;
         dispatch_semaphore_signal(descriptorUpdateSemaphore);
@@ -159,12 +150,12 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         
         NSData *descriptorDigest = [OPSHA1 digestOfText:descriptorStr];
         
-        if (![self.freshDescriptorDigest isEqualToData:descriptorDigest]) {
-            //[self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
-            [pool release];
-            dispatch_semaphore_signal(descriptorUpdateSemaphore);
+        if (![self.descriptorDigest isEqualToData:descriptorDigest]) {
+            [self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+//            [pool release];
+//            dispatch_semaphore_signal(descriptorUpdateSemaphore);
             result = NO;
-            return NO;
+//            return NO;
         }
 
         if (result == YES) {
@@ -174,26 +165,20 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             [descrIdentKey release];
             
             NSString *signatureStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:3]];
-            if (![self.identKey verifyBase64SignatureStr:signatureStr forDataDigest:self.freshDescriptorDigest]) {
-                //[self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
-                [pool release];
-                dispatch_semaphore_signal(descriptorUpdateSemaphore);
+            if (![self.identKey verifyBase64SignatureStr:signatureStr forDataDigest:self.descriptorDigest]) {
+                [self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
+//                [pool release];
+//                dispatch_semaphore_signal(descriptorUpdateSemaphore);
                 result = NO;
-                return NO;
+//                return NO;
             }
         }
+
         if (result == YES) {
             NSString *onionKeyPattern = @"onion-key\\n-----BEGIN RSA PUBLIC KEY-----\\n(.*?)\\n-----END RSA PUBLIC KEY-----";
             NSRegularExpression *onionKeyRegEx = [NSRegularExpression regularExpressionWithPattern:onionKeyPattern options:optionsRegEx error:NULL];
             NSArray *onionKeyMatch = [onionKeyRegEx matchesInString:descriptorStr options:NSMatchingReportProgress range:NSMakeRange(0, [descriptorStr length])];
-            if (![onionKeyMatch count] == 1) {
-                [self logMsg:@"Descriptor does not contain onion-key (OR fingerprint=%@)", self.fingerprint];
-                [pool release];
-                dispatch_semaphore_signal(descriptorUpdateSemaphore);
-                result = NO;
-                return NO;
-            }
-            else {
+            if ([onionKeyMatch count] == 1) {
                 match = [onionKeyMatch objectAtIndex:0];
                 NSString *onionKeyStr = [descriptorStr substringWithRange:[match rangeAtIndex:1]];
                 OPRSAPublicKey *descrOnionKey = [[OPRSAPublicKey alloc] initWithBase64DerEncodingStr:onionKeyStr];
@@ -203,47 +188,50 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
                 if (self.onionKey == NULL) {
                     [self logMsg:@"failed to load key from :\n%@", descriptorStr];
                 }
-                
+
                 [self.delegate node:self event:OPTorNodeDescriptorReadyEvent];
             }
+            else {
+                [self logMsg:@"Descriptor does not contain onion-key (OR fingerprint=%@)", self.fingerprint];
+                //                [pool release];
+                //                dispatch_semaphore_signal(descriptorUpdateSemaphore);
+                result = NO;
+                //                return NO;
+            }
         }
-        //[self logMsg:@"descriptor is OK!!!. So happy :)"];
+        //
     }
     else {
-        //[self logMsg:@"descriptor pattern missmatch :\n'%@'", rawDescriptorStr];
-        [pool release];
-        dispatch_semaphore_signal(descriptorUpdateSemaphore);
+        [self logMsg:@"descriptor pattern missmatch :\n'%@'", rawDescriptorStr];
+//        [pool release];
+//        dispatch_semaphore_signal(descriptorUpdateSemaphore);
         result = NO;
-        return NO;
+//        return NO;
     }
     
-//    [self logMsg:@"%@",rawDescriptorStr];
-//    [self logMsg:@">>>%@", self.identKey.digest];
-
-    //[pool drain];
     [pool release];
     dispatch_semaphore_signal(descriptorUpdateSemaphore);
 
-    self.descriptorRetainCount = 1;
+    if (result == YES) {
+        //[self retainDescriptor];
+        self.descriptorRetainCount = 1;
+        [self logMsg:@"descriptor is OK!!!. So happy :)"];
+    }
+    else {
+        [self logMsg:@"failed to load descriptor"];
+        self.descriptorRetainCount = 0;
+    }
+
     return YES;
 }
 
 - (void) prefetchDescriptor {
     if (self.descriptorRetainCount > 0) {
-        return;
-    }
-    
-    if (self.freshDescriptorDigest == NULL) {
-        [self.delegate node:self event:OPTorNodeDescriptorUpdateFailedEvent];
+        [self logMsg:@"prefetchDescriptor: descriptorRetainCount > 0. Skipping..."];
         return;
     }
 
     @synchronized(self) {
-        if (self.isHasLastDescriptor) {
-            [self.delegate node:self event:OPTorNodeDescriptorReadyEvent];
-            return;
-        }
-
         if (self.isUpdating) {
             [self.delegate node:self event:OPTorNodeDescriptorUpdateInProgressEvent];
             return;
@@ -252,35 +240,21 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         self.isUpdating = YES;
         updateDelay = 0;
         
-        if (self.currentDescriptorDigest == NULL) {
-            // if this is a very first load attempt try to bypass downloading - check cached information first
-//            dispatch_async(dispatchQueue, ^{
-//                [self loadDescriptor];
-//            });
-            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
-        }
-        else {
-            // this branch is, probably, not needed at all
-//            dispatch_async(dispatchQueue, ^{
-//                [self updateDescriptor];
-//            });
-            [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateDescriptor) object:NULL];
-        }
-
+        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
     }
 }
 
-- (void) updateDescriptor {
-    [self downloadResource:self.resourcePath to:self.cacheFilePath];
-    [self loadDescriptor];
-}
+//- (void) updateDescriptor {
+//    [self logMsg:@"updateDescriptor: %@", self.resourcePath];
+//    [self downloadResource:self.resourcePath to:self.cacheFilePath];
+//    [self loadDescriptor];
+//}
 
 - (void) loadDescriptor {
-    NSData *rawDescriptorData = [[NSData alloc] initWithContentsOfFile:self.cacheFilePath];
+    NSData *rawDescriptorData = [self downloadResource:self.resourcePath withCacheFile:self.cacheFilePath];
     NSString *rawDescriptorStr = [[NSString alloc] initWithData:rawDescriptorData encoding:NSUTF8StringEncoding];
     
-    if ([self processDescriptorDocument:rawDescriptorStr]) {
-        self.currentDescriptorDigest = self.freshDescriptorDigest;
+    if ([rawDescriptorStr isNotEqualTo:@""] && [self processDescriptorDocument:rawDescriptorStr]) {
         self.isUpdating = NO;
     }
     else {
@@ -291,19 +265,14 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         else {
             updateDelay -= arc4random() % 16;
         }
-        
-        //
-        // TODO: this can leave cache files lost and not cleared ever.
-        // to implement Invalidation of delayed update or to check if this node is marked as dead.
-        
+
 //        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatchQueue, ^{
 //            [self updateDescriptor];
 //        });
-        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(updateDescriptor) object:NULL delayedFor:delay];
+        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL delayedFor:delay];
     }
     
     [rawDescriptorStr release];
-    [rawDescriptorData release];
 }
 
 - (void) retainDescriptor {
@@ -328,7 +297,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 
 - (void) initializeWithParams:(NSDictionary *)nodeParams {
     self.fingerprint = [nodeParams objectForKey:nodeFingerprintDataKey];
-    self.freshDescriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
+    self.descriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
 
     NSString *flags = [nodeParams objectForKey:nodeFlagsStrKey];
     NSArray *array = [flags componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
@@ -372,9 +341,9 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         self.onionKey = NULL;
         
         updateDelay = 0;
-        
-        self.freshDescriptorDigest = NULL;
-        self.currentDescriptorDigest = NULL;
+
+        self.fingerprint = NULL;
+        self.descriptorDigest = NULL;
 
         _descriptorRetainCount = 0;
         
@@ -391,8 +360,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     self.ipStr = NULL;
     
     self.fingerprint = NULL;
-    self.currentDescriptorDigest = NULL;
-    self.freshDescriptorDigest = NULL;
+    self.descriptorDigest = NULL;
 
     self.lastUpdated = NULL;
 

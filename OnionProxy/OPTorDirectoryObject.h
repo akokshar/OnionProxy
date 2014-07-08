@@ -13,5 +13,6 @@
 }
 
 - (BOOL) downloadResource:(NSString *)resource to:(NSString *)file;
+- (NSData *) downloadResource:(NSString *)resource withCacheFile:(NSString *)file;
 
 @end

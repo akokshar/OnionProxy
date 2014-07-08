@@ -11,11 +11,11 @@
 @implementation OPBase64
 
 + (NSData *) decodeString:(NSString *)str{
-    return NULL;
+    return [[[NSData alloc] initWithBase64EncodedString:str options:NSDataBase64DecodingIgnoreUnknownCharacters] autorelease];
 }
 
 + (NSString *) encodeData:(NSData *)data {
-    return NULL;
+    return [data base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
 }
 
 @end
