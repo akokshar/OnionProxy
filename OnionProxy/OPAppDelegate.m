@@ -14,7 +14,6 @@
 
 @interface OPAppDelegate() {
     NSStatusItem *statusItem;
-    OPTorNetwork *torNetwork;
 }
 
 @end
@@ -23,8 +22,6 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     [NSURLProtocol registerClass:[OPTorDirectoryProtocol class]];
-
-    torNetwork = [[OPTorNetwork alloc] init];
 
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem retain];
@@ -41,7 +38,6 @@
 
 - (void) applicationWillTerminate:(NSNotification *)notification {
     [[NSStatusBar systemStatusBar] removeStatusItem:statusItem];
-    [torNetwork release];
 }
 
 - (IBAction)showMainWindow:(id)sender {
@@ -50,19 +46,19 @@
 }
 
 - (IBAction)createCircuit:(id)sender {
-    [torNetwork createCircuit];
+    [[OPTorNetwork network] createCircuit];
 }
 
 - (IBAction)closeCircuit:(id)sender {
-    [torNetwork closeCircuit];
+    [[OPTorNetwork network] closeCircuit];
 }
 
 - (IBAction)openStream:(id)sender {
-    [torNetwork openStream];
+    [[OPTorNetwork network] openStream];
 }
 
 - (IBAction)closeStream:(id)sender {
-    [torNetwork closeStream];
+    [[OPTorNetwork network] closeStream];
 }
 
 @end

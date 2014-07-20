@@ -9,13 +9,14 @@
 #import "OPTorNetwork.h"
 #import "OPTorDirectory.h"
 #import "OPCircuit.h"
+#import "OPHTTPStream.h"
 
 @interface OPTorNetwork() {
 
 }
 
 @property (retain) OPCircuit *c;
-@property (assign) OPStreamId s;
+@property (retain) OPHTTPStream *s;
 
 @end
 
@@ -27,7 +28,7 @@
 - (void) circuit:(OPCircuit *)circuit event:(OPCircuitEvent)event {
     switch (event) {
         case OPCircuitEventExtended: {
-            [self logMsg:@"Circuit ready!. (LEN=%lu)", (unsigned long)circuit.length];
+            [self logMsg:@"Circuit ready!. (LEN=%lu)", (unsigned long)circuit.circuitLength];
         } break;
 
         case OPCircuitEventTruncated: {
@@ -40,23 +41,43 @@
     }
 }
 
+- (OPHTTPStream *) createHTTPStreamForDirectoryService {
+    return NULL;
+}
+
 - (void) createCircuit {
     self.c = [[[OPCircuit alloc] initWithDelegate:self] autorelease];
-    self.c.length = 3;
+    self.c.circuitLength = 3;
 }
 
 - (void) closeCircuit {
     [self logMsg:@"circuit retain count %lu", (unsigned long)self.c.retainCount];
+    [self.c close];
     self.c = NULL;
 }
 
 - (void) openStream {
-    self.c.length++;
-//    self.s = [self.c openStreamForClient:NULL];
+    self.s = [[OPHTTPStream alloc] initForDirectoryServiceWithCircuit:c client:NULL];
+    [self logMsg:@"stream created. retain count %lu", (unsigned long)self.s .retainCount];
+    [self.s open];
+    [self logMsg:@"stream opened. retain count %lu", (unsigned long)self.s .retainCount];
 }
 
 - (void) closeStream {
-    [self.c closeStream:self.s];
+    [self.s  close];
+    [self logMsg:@"stream closed. retain count %lu", (unsigned long)self.s .retainCount];
+    self.s  = NULL;
+}
+
++ (OPTorNetwork *) network {
+    static OPTorNetwork *instance = NULL;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[OPTorNetwork alloc] init];
+    });
+
+    return instance;
 }
 
 @end

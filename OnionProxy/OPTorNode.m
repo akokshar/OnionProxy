@@ -188,8 +188,6 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
                 if (self.onionKey == NULL) {
                     [self logMsg:@"failed to load key from :\n%@", descriptorStr];
                 }
-
-                [self.delegate node:self event:OPTorNodeDescriptorReadyEvent];
             }
             else {
                 [self logMsg:@"Descriptor does not contain onion-key (OR fingerprint=%@)", self.fingerprint];
@@ -239,22 +237,20 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 
         self.isUpdating = YES;
         updateDelay = 0;
-        
-        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
+
+        dispatch_async(dispatchQueue, ^{
+            [self loadDescriptor];
+        });
+        // [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
     }
 }
-
-//- (void) updateDescriptor {
-//    [self logMsg:@"updateDescriptor: %@", self.resourcePath];
-//    [self downloadResource:self.resourcePath to:self.cacheFilePath];
-//    [self loadDescriptor];
-//}
 
 - (void) loadDescriptor {
     NSData *rawDescriptorData = [self downloadResource:self.resourcePath withCacheFile:self.cacheFilePath];
     NSString *rawDescriptorStr = [[NSString alloc] initWithData:rawDescriptorData encoding:NSUTF8StringEncoding];
     
     if ([rawDescriptorStr isNotEqualTo:@""] && [self processDescriptorDocument:rawDescriptorStr]) {
+        [self.delegate node:self event:OPTorNodeDescriptorReadyEvent];
         self.isUpdating = NO;
     }
     else {
@@ -266,10 +262,10 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             updateDelay -= arc4random() % 16;
         }
 
-//        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatchQueue, ^{
-//            [self updateDescriptor];
-//        });
-        [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL delayedFor:delay];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatchQueue, ^{
+            [self loadDescriptor];
+        });
+        // [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL delayedFor:delay];
     }
     
     [rawDescriptorStr release];

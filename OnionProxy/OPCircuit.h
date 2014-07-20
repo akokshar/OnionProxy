@@ -15,11 +15,12 @@ typedef enum {
     OPStreamEventConnected,
     OPStreamEventDataReceived,
     OPStreamEventDisconnected
-} OPStreamEvent;
+} OPCircuitStreamEvent;
 
-@protocol OPStreamDelegate
-- (void) stream:(OPStreamId)streamId receivedData:(NSData *)data;
-- (void) stream:(OPStreamId)streamId event:(OPStreamEvent)event;
+@protocol OPCircuitStreamDelegate
+- (void) streamReceivedData:(NSData *)data;
+- (void) streamOpened;
+- (void) streamClosed;
 @end
 
 @class OPCircuit;
@@ -39,7 +40,9 @@ typedef enum {
 @property (assign) id<OPCircuitDelegate> delegate;
 
 /// Number of TORs the circuit go through. Circuit is extended or truncated when this property modified.
-@property (getter=getLength, setter=setLength:) NSUInteger length;
+@property (getter=getCircuitLength, setter=setCircuitLength:) NSUInteger circuitLength;
+
+@property (readonly, getter=getIsDirectoryServiceAvailable) BOOL isDirectoryServiceAvailable;
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate;
 
@@ -51,13 +54,15 @@ typedef enum {
 - (void) close;
 
 /**
- * Create new stream context for specified client.
+ * Create new stream context to access directory service for specified client.
  */
-- (OPStreamId) openStreamForClient:(id<OPStreamDelegate>)client;
+- (OPStreamId) openDirectoryStreamWithDelegate:(id<OPCircuitStreamDelegate>)delegate;
 
 /**
  * Free resources allocated by <code> - (OPStream *) buildStreamForClient:(id<OPStreamClientDelegate>)client;</code>
  */
 - (void) closeStream:(OPStreamId)stream;
+
+- (void) sendData:(NSData *)data overStream:(OPStreamId)streamId;
 
 @end

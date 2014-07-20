@@ -39,7 +39,7 @@
  * Provide random Cache node with descriptor loaded. Guaranteed not to return NULL node;
  * Caller have to retaing returned object in order to keep descriptor.
  */
-- (void) getRandomDirRouterAsync:(void (^)(OPTorNode *node))completionHandler;
+- (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler;
 
 
 @end

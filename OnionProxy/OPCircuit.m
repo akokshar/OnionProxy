@@ -53,12 +53,13 @@ NSString * const kOPCircuitForwardSimmetricKeyKey = @"ForwardSimmetricKeyKey";
 NSString * const kOPCircuitBackwardSimmetricKeyKey = @"BackwardSimmetricKeyKey";
 NSString * const kOPCircuitNodeSentCommand = @"SentCommand";
 
-NSString * const kOPStreamClientKey = @"ClientKey";
+NSString * const kOPStreamDelegateKey = @"DelegateKey";
 NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
+NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 
 @interface OPCircuit() {
     NSUInteger needLength;
-    uint16 streamIdCounter;
+    OPStreamId streamIdCounter;
 }
 
 @property (atomic) BOOL isBusy;
@@ -67,6 +68,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 @property (retain) NSMutableArray *nodes;
 /// tail node index
 @property (readonly, getter=getTailNodeIndex) NSUInteger tailNodeIndex;
+@property (readonly, getter=getDirectoryNodeIndex) NSInteger directoryNodeIndex;
 @property (retain) NSMutableDictionary *streams;
 
 - (uint16) generateStreamId;
@@ -93,13 +95,13 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 @implementation OPCircuit
 
-@synthesize length;
+@synthesize circuitLength;
 
-- (NSUInteger) getLength {
+- (NSUInteger) getCircuitLength {
     return self.nodes.count;
 }
 
-- (void) setLength:(NSUInteger)newLength {
+- (void) setCircuitLength:(NSUInteger)newLength {
     if (newLength == needLength || self.isBusy) {
         return;
     }
@@ -110,7 +112,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
         [self close];
     }
 
-    if (self.length < needLength) {
+    if (self.circuitLength < needLength) {
         [self extend];
     }
     else {
@@ -122,6 +124,29 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (NSUInteger) getTailNodeIndex {
     return self.nodes.count - 1;
+}
+
+@synthesize directoryNodeIndex = _directoryNodeIndex;
+
+- (NSInteger) getDirectoryNodeIndex {
+    @synchronized(self) {
+        if (_directoryNodeIndex == -1) {
+            for (NSInteger i = self.nodes.count - 1; i >= 0 && _directoryNodeIndex == -1; i--) {
+                NSMutableDictionary *torCtx = [self.nodes objectAtIndex:i];
+                OPTorNode *node = [torCtx objectForKey:kOPCircuitNodeKey];
+                if (node.isV2Dir) {
+                    _directoryNodeIndex = i;
+                }
+            }
+        }
+    }
+    return _directoryNodeIndex;
+}
+
+@synthesize isDirectoryServiceAvailable;
+
+- (BOOL) getIsDirectoryServiceAvailable {
+    return self.directoryNodeIndex >= 0;
 }
 
 - (NSData *) handshakeRequestData {
@@ -141,9 +166,10 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
     // Symmetrically encrypted:
     //    Second part of g^x            [DH_LEN-(PK_ENC_LEN-PK_PAD_LEN-KEY_LEN) bytes]
 
-    NSMutableDictionary *lastTor = [self.nodes objectAtIndex:self.nodes.count - 1];
+    //    NSMutableDictionary *lastNodeCtx = [self.nodes objectAtIndex:self.nodes.count - 1];
+    NSMutableDictionary *lastNodeCtx = [self.nodes lastObject];
 
-    OPTorNode *node = [lastTor objectForKey:kOPCircuitNodeKey];
+    OPTorNode *node = [lastNodeCtx objectForKey:kOPCircuitNodeKey];
     OPDiffieHellman *dh = [[OPDiffieHellman alloc] init];
     OPSimmetricKey *simmetricKey = [[OPSimmetricKey alloc] init];
 
@@ -161,7 +187,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
     
     [simmetricKey release];
 
-    [lastTor setObject:dh forKey:kOPCircuitHandshakeKey];
+    [lastNodeCtx setObject:dh forKey:kOPCircuitHandshakeKey];
     [dh release];
 
     return handshakeDada;
@@ -183,9 +209,10 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
     
     BOOL result = YES;
 
-    NSMutableDictionary *lastTor = [self.nodes objectAtIndex:self.nodes.count - 1];
+    //    NSMutableDictionary *lastNodeCtx = [self.nodes objectAtIndex:self.nodes.count - 1];
+    NSMutableDictionary *lastNodeCtx = [self.nodes lastObject];
 
-    OPDiffieHellman *dh = [lastTor objectForKey:kOPCircuitHandshakeKey];
+    OPDiffieHellman *dh = [lastNodeCtx objectForKey:kOPCircuitHandshakeKey];
     NSData *dhSharedKey = [dh deriveSimmetricKeyDataWithResonse:[NSData dataWithBytes:data.bytes length:dhPublicKeyLen]];
     NSMutableData *baseMaterial = [NSMutableData dataWithData:dhSharedKey];
     [baseMaterial setLength:baseMaterial.length + 1];
@@ -210,7 +237,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
                 OPSHA1 *df = [[OPSHA1 alloc] init];
                 [df updateWithData:[OPSHA1 digestOfData:baseMaterial]];
                 //[df updateWithData:baseMaterial];
-                [lastTor setObject:df forKey:kOPCircuitForwardDigestKey];
+                [lastNodeCtx setObject:df forKey:kOPCircuitForwardDigestKey];
                 [df release];
             } break;
                 
@@ -218,7 +245,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
                 OPSHA1 *db = [[OPSHA1 alloc] init];
                 [db updateWithData:[OPSHA1 digestOfData:baseMaterial]];
                 //[db updateWithData:baseMaterial];
-                [lastTor setObject:db forKey:kOPCircuitBackwardDigestKey];
+                [lastNodeCtx setObject:db forKey:kOPCircuitBackwardDigestKey];
                 [db release];
             } break;
                 
@@ -231,17 +258,17 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
                 //[self logMsg:@"Keys material:%@", keys];
                 
                 OPSimmetricKey *kf = [[OPSimmetricKey alloc] initWithData:[NSData dataWithBytes:keys.bytes length:16]];
-                [lastTor setObject:kf forKey:kOPCircuitForwardSimmetricKeyKey];
+                [lastNodeCtx setObject:kf forKey:kOPCircuitForwardSimmetricKeyKey];
                 [kf release];
                 
                 OPSimmetricKey *kb = [[OPSimmetricKey alloc] initWithData:[NSData dataWithBytes:keys.bytes + 16 length:16]];
-                [lastTor setObject:kb forKey:kOPCircuitBackwardSimmetricKeyKey];
+                [lastNodeCtx setObject:kb forKey:kOPCircuitBackwardSimmetricKeyKey];
                 [kb release];
             } break;
         }
     }
 
-    [lastTor removeObjectForKey:kOPCircuitHandshakeKey];
+    [lastNodeCtx removeObjectForKey:kOPCircuitHandshakeKey];
     [self logMsg:@"Handshake complete"];
 
     return result;
@@ -300,8 +327,43 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
             [self extendFinishWithResult:[self handshakeFinishWithResponseData:data]];
         } break;
 
+        case OPRelayCommanConnected: {
+            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
+            [delegate streamOpened];
+        } break;
+
+        case OPRelayCommanEnd: {
+            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            [streamCtx setObject:[NSNumber numberWithBool:NO] forKey:kOPStreamIsConnectedKey];
+            [self closeStream:streamId];
+        } break;
+
+        case OPRelayCommanRelay: {
+            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
+            [delegate streamReceivedData:data];
+        } break;
+
         case OPRelayCommanTruncated: {
             [self.delegate circuit:self event:OPCircuitEventTruncated];
+            while (self.nodes.count > needLength) {
+                [self.nodes removeLastObject];
+            }
+
+            NSSet *deadStreams = [self.streams keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
+                NSDictionary *stream = (NSDictionary *)obj;
+                NSNumber *streamExitIndex = [stream objectForKey:kOPStreamExitNodeIndex];
+                return ([streamExitIndex integerValue] >= self.circuitLength);
+            }];
+
+            [deadStreams enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+                NSDictionary *stream = [self.streams objectForKey:obj];
+                id<OPCircuitStreamDelegate> streamDelegate = [stream objectForKey:kOPStreamDelegateKey];
+                [streamDelegate streamClosed];
+                [self.streams removeObjectForKey:obj];
+            }];
+
             self.isBusy = NO;
         } break;
 
@@ -345,7 +407,6 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
                     if (digestReceived == cellDigestExpected) {
                         //[self logMsg:@"CELL RECOGNIZED"];
                         [self.nodes[i] setObject:bDigestTemp forKey:kOPCircuitBackwardDigestKey];
-                        //[bDigest updateWithData:cellData];
                         isRecognized = YES;
 
                         [self processCommand:cell->relayCommand
@@ -426,14 +487,13 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) extendToNode:(OPTorNode *)node {
     [self.nodes addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:node, kOPCircuitNodeKey, nil]];
-    if (self.length == 1) {
+    if (self.circuitLength == 1) {
         [node retainDescriptor];
         [self.connection connectToNode:node];
     }
     else {
-        NSMutableDictionary *lastTor = [self.nodes objectAtIndex:self.nodes.count - 1];
-
-        OPTorNode *nextNode = [lastTor objectForKey:kOPCircuitNodeKey];
+        NSMutableDictionary *lastNodeCtx = [self.nodes lastObject];
+        OPTorNode *nextNode = [lastNodeCtx objectForKey:kOPCircuitNodeKey];
 
         uint32_t ip = nextNode.ip;
         uint16_t port = CFSwapInt16HostToBig(nextNode.orPort);
@@ -451,7 +511,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 }
 
 - (void) extend {
-    if (self.length >= needLength) {
+    if (self.circuitLength >= needLength) {
         [self.delegate circuit:self event:OPCircuitEventExtended];
         self.isBusy = NO;
         return;
@@ -464,18 +524,22 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) extendFinishWithResult:(BOOL)result {
     if (result) {
-        [self logMsg:@"Circuit extended. current len:%lu", (unsigned long)self.length];
+        [self logMsg:@"Circuit extended. current len:%lu", (unsigned long)self.circuitLength];
     }
     else {
         [self logMsg:@"Circuit extention failed"];
-        [self.nodes removeObjectAtIndex:self.length - 1];
+        [self.nodes removeObjectAtIndex:self.circuitLength - 1];
     }
     [self extend];
 }
 
 - (void) trancate {
-    if (needLength >= self.length) {
+    if (needLength >= self.circuitLength) {
         return;
+    }
+
+    if (needLength < _directoryNodeIndex) {
+        _directoryNodeIndex = -1;
     }
 
     if (needLength > 0) {
@@ -488,7 +552,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 
 - (void) appendNode:(OPTorNode *)node {
     if (node || !self.isBusy) {
-        needLength = self.length + 1;
+        needLength = self.circuitLength + 1;
         [self extendToNode:node];
     }
 }
@@ -496,26 +560,75 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
 - (void) close {
     [self.connection disconnect];
 
+    [self.streams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        NSDictionary *streamCtx = [self.streams objectForKey:obj];
+        id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
+        [streamDelegate streamClosed];
+    }];
+
+    [self.streams removeAllObjects];
     [self.nodes removeAllObjects];
     [self.delegate circuit:self event:OPCircuitEventClosed];
 }
 
-- (uint16) generateStreamId {
-    return streamIdCounter++;
+- (OPStreamId) generateStreamId {
+    OPStreamId nextId = streamIdCounter + arc4random() % 3;
+    if (nextId == 0) {
+        nextId++;
+    }
+    streamIdCounter = nextId;
+    return streamIdCounter;
 }
 
-- (OPStreamId) openStreamForClient:(id<OPStreamDelegate>)client {
+- (OPStreamId) openDirectoryStreamWithDelegate:(id<OPCircuitStreamDelegate>)delegate {
+    if (!self.isDirectoryServiceAvailable) {
+        return 0;
+    }
+
     uint16 streamId = [self generateStreamId];
-    NSMutableDictionary *stream = [NSMutableDictionary dictionaryWithObject:@"NoClient" forKey:kOPStreamClientKey];
-    [self.streams setObject:stream forKey:[NSNumber numberWithInt:streamId]];
-    [self relayCommand:OPRelayCommanBeginDir toNode:self.tailNodeIndex forStream:streamId withData:NULL];
+    NSMutableDictionary *streamCtx = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                   delegate, kOPStreamDelegateKey,
+                                   [NSNumber numberWithInteger:self.directoryNodeIndex], kOPStreamExitNodeIndex,
+                                   [NSNumber numberWithBool:YES], kOPStreamIsConnectedKey,
+                                   nil];
+    [self.streams setObject:streamCtx forKey:[NSNumber numberWithInt:streamId]];
+    [self relayCommand:OPRelayCommanBeginDir toNode:self.directoryNodeIndex forStream:streamId withData:NULL];
     return streamId;
 }
 
 - (void) closeStream:(OPStreamId)streamId {
-    [self relayCommand:OPRelayCommanEnd toNode:self.tailNodeIndex forStream:streamId withData:NULL];
+    NSMutableDictionary *streamCtx = [self.streams objectForKeyedSubscript:[NSNumber numberWithInt:streamId]];
+    if (streamCtx == NULL) {
+        return;
+    }
+
+    NSNumber *isConnected = [streamCtx objectForKey:kOPStreamIsConnectedKey];
+    if ([isConnected boolValue] == YES) {
+        NSNumber *nodeIndex = [streamCtx objectForKey:kOPStreamExitNodeIndex];
+        [self relayCommand:OPRelayCommanEnd toNode:[nodeIndex integerValue] forStream:streamId withData:NULL];
+    }
+
+    id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
+    [streamDelegate streamClosed];
+
     [self.streams removeObjectForKey:[NSNumber numberWithInt:streamId]];
 }
+
+- (void) sendData:(NSData *)data overStream:(OPStreamId)streamId {
+    if (data == NULL) {
+        return;
+
+    }
+
+    NSMutableDictionary *streamCtx = [self.streams objectForKeyedSubscript:[NSNumber numberWithInt:streamId]];
+    if (streamCtx == NULL) {
+        return;
+    }
+
+    NSNumber *exitIndex = [streamCtx objectForKey:kOPStreamExitNodeIndex];
+    [self relayCommand:OPRelayCommanRelay toNode:[exitIndex integerValue] forStream:streamId withData:data];
+}
+
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate {
     [self logMsg:@"INIT CIRCUIT"];
@@ -527,6 +640,7 @@ NSString * const kOPStreamIsConnectedKey = @"IsConnectedKey";
         self.nodes = [NSMutableArray arrayWithCapacity:[OPConfig config].circuitLength];
         self.connection = [OPConnection connectionWithDelegate:self];
         self.isBusy = NO;
+        _directoryNodeIndex = -1;
     }
     return self;
 }

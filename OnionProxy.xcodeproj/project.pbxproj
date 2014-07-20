@@ -37,6 +37,7 @@
 		34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EBC18EF285300CE02E5 /* OPCSP.m */; };
 		348FDF46196830F2007D40B0 /* OPDirectoryStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 348FDF45196830F2007D40B0 /* OPDirectoryStore.m */; };
 		34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A1F424192898EE00CF6EEF /* OPBase64.m */; };
+		34B9B2DF196CA4C60021041C /* OPHTTPStream.m in Sources */ = {isa = PBXBuildFile; fileRef = 34B9B2DE196CA4C60021041C /* OPHTTPStream.m */; };
 		34C1159C1940E40100A7CD44 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 341C444A18A621E4002018E1 /* MainMenu.xib */; };
 		34E1A6711954BE8F004B1A4E /* icon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 34E1A6701954BE8F004B1A4E /* icon.icns */; };
 		34E49E7A18B9235200759502 /* OPRSAPublicKey.m in Sources */ = {isa = PBXBuildFile; fileRef = 34E49E7918B9235200759502 /* OPRSAPublicKey.m */; };
@@ -131,6 +132,8 @@
 		348FDF45196830F2007D40B0 /* OPDirectoryStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDirectoryStore.m; sourceTree = "<group>"; };
 		34A1F423192898EE00CF6EEF /* OPBase64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPBase64.h; sourceTree = "<group>"; };
 		34A1F424192898EE00CF6EEF /* OPBase64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPBase64.m; sourceTree = "<group>"; };
+		34B9B2DD196CA4C60021041C /* OPHTTPStream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPHTTPStream.h; sourceTree = "<group>"; };
+		34B9B2DE196CA4C60021041C /* OPHTTPStream.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPHTTPStream.m; sourceTree = "<group>"; };
 		34DF24D118E60B9B00B705D6 /* OnionProxy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = OnionProxy.entitlements; sourceTree = "<group>"; };
 		34DF24D218E60C1700B705D6 /* libtommath.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libtommath.a; path = "libtommath-0.42.0/libtommath.a"; sourceTree = "<group>"; };
 		34E1A6701954BE8F004B1A4E /* icon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = icon.icns; sourceTree = "<group>"; };
@@ -237,6 +240,8 @@
 				3450744E18C921C600868069 /* OPConnection.m */,
 				344B294A18DE18B900C463AA /* OPCircuit.h */,
 				344B294B18DE18B900C463AA /* OPCircuit.m */,
+				34B9B2DD196CA4C60021041C /* OPHTTPStream.h */,
+				34B9B2DE196CA4C60021041C /* OPHTTPStream.m */,
 				340C694A194C858F00B267B4 /* OPTorNetwork.h */,
 				340C694B194C858F00B267B4 /* OPTorNetwork.m */,
 				341C444718A621E4002018E1 /* OPAppDelegate.h */,
@@ -459,6 +464,7 @@
 				34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */,
 				341C444218A621E4002018E1 /* main.m in Sources */,
 				3450744F18C921C600868069 /* OPConnection.m in Sources */,
+				34B9B2DF196CA4C60021041C /* OPHTTPStream.m in Sources */,
 				34E7E00F18CD96F800599860 /* OPJobDispatcher.m in Sources */,
 				34032C4D18AF7296001FF603 /* OPAuthorityServer.m in Sources */,
 				341509D2192D0C9D003B4CBE /* OPTorDirectoryViewController.m in Sources */,

@@ -10,17 +10,15 @@
 #import "OPTorDirectoryViewController.h"
 #import "OPConsensus.h"
 
-NSUInteger const torDescriptorsPrefetchAmount = 16;
 NSUInteger const torDescriptorsReadyMinimum = 8;
 
 @interface OPTorDirectory() {
     dispatch_queue_t torNodeRequestQueue;
 
-    NSMutableArray *torReadyRouters;
-    dispatch_semaphore_t torReadyRouterSemaphore;
-
-    NSMutableArray *torReadyCaches;
-    dispatch_semaphore_t torReadyCacheSemaphore;
+    NSMutableArray *readyRouters;
+    NSUInteger readyCacheCount;
+    dispatch_semaphore_t readyRouterSemaphore;
+    dispatch_semaphore_t readyCacheSemaphore;
 
     OPConsensus *consensus;
     OPTorDirectoryViewController *viewController;
@@ -69,35 +67,59 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     return [OPTorDirectory directory].getRandomDirectory;
 }
 
-- (void) getRandomDirRouterAsync:(void (^)(OPTorNode *node))completionHandler {
+- (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler {
     dispatch_async(torNodeRequestQueue, ^{
-        dispatch_semaphore_wait(torReadyCacheSemaphore, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(readyCacheSemaphore, DISPATCH_TIME_FOREVER);
         OPTorNode *readyNode = NULL;
-        @synchronized(torReadyCaches) {
-            readyNode = [torReadyCaches objectAtIndex:0];
-            [readyNode retain];
-            [torReadyCaches removeObjectAtIndex:0];
+
+        @synchronized(readyRouters) {
+            for (NSInteger i = [readyRouters count] - 1; i >= 0; i--) {
+                readyNode = [readyRouters objectAtIndex:i];
+                if (readyNode.isV2Dir) {
+                    [readyNode retain];
+                    [readyRouters removeObjectAtIndex:i];
+                }
+            }
         }
-        [viewController setPreloadedDescriptorsCount:[torReadyCaches count] + [torReadyRouters count]];
+        [viewController setPreloadedDescriptorsCount:[readyRouters count]];
+
+        readyCacheCount--;
+
         completionHandler(readyNode);
         [readyNode releaseDescriptor];
         [readyNode release];
+
+        [self prefetchDescriptors];
     });
 }
 
 - (void) getRandomRouterAsync:(void (^)(OPTorNode *node))completionHandler {
     dispatch_async(torNodeRequestQueue, ^{
-        dispatch_semaphore_wait(torReadyRouterSemaphore, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(readyRouterSemaphore, DISPATCH_TIME_FOREVER);
         OPTorNode *readyNode = NULL;
-        @synchronized(torReadyRouters) {
-            readyNode = [torReadyRouters objectAtIndex:0];
+        BOOL isHaveCache = (dispatch_semaphore_wait(readyCacheSemaphore, DISPATCH_TIME_NOW) == 0);
+
+        @synchronized(readyRouters) {
+            readyNode = [readyRouters lastObject];
             [readyNode retain];
-            [torReadyRouters removeObjectAtIndex:0];
+            [readyRouters removeLastObject];
         }
-        [viewController setPreloadedDescriptorsCount:[torReadyCaches count] + [torReadyRouters count]];
+        [viewController setPreloadedDescriptorsCount:[readyRouters count]];
+
+        if (isHaveCache) {
+            if (readyNode.isV2Dir) {
+                readyCacheCount--;
+            }
+            else {
+                dispatch_semaphore_signal(readyCacheSemaphore);
+            }
+        }
+
         completionHandler(readyNode);
         [readyNode releaseDescriptor];
         [readyNode release];
+
+        [self prefetchDescriptors];
     });
 }
 
@@ -106,9 +128,9 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         return;
     }
 
-    if (torReadyRouters.count < torDescriptorsReadyMinimum) {
+    if (readyRouters.count < torDescriptorsReadyMinimum) {
         [self logMsg:@"Prefetching descriptors"];
-        for (NSUInteger i = torReadyRouters.count; i < torDescriptorsPrefetchAmount; i++) {
+        for (NSUInteger i = readyRouters.count; i < torDescriptorsReadyMinimum; i++) {
             if (self.torNodesIndex >= self.torNodesKeys.count) {
                 self.torNodesIndex = 0;
                 self.torNodesKeys = [self arrayByShufflingArray:self.torNodesKeys];
@@ -121,6 +143,20 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         }
     }
 
+    if (readyCacheCount < torDescriptorsReadyMinimum) {
+        for (NSUInteger i = readyCacheCount; i < torDescriptorsReadyMinimum; i++) {
+            if (self.v2DirNodesIndex >= self.v2DirNodesKeys.count) {
+                self.v2DirNodesIndex = 0;
+                self.v2DirNodesKeys = [self arrayByShufflingArray:self.v2DirNodesKeys];
+            }
+            OPTorNode *node = [consensus.nodes objectForKey:[self.v2DirNodesKeys objectAtIndex:self.v2DirNodesIndex]];
+            node.delegate = self;
+            [node prefetchDescriptor];
+
+            self.v2DirNodesIndex++;
+        }
+    }
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [self prefetchDescriptors];
     });
@@ -129,11 +165,15 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 - (void) node:(OPTorNode *)node event:(OPTorNodeEvent)event {
     switch (event) {
         case OPTorNodeDescriptorReadyEvent: {
-            @synchronized(torReadyRouters) {
-                [torReadyRouters addObject:node];
+            @synchronized(readyRouters) {
+                [readyRouters addObject:node];
             }
-            dispatch_semaphore_signal(torReadyRouterSemaphore);
-            [viewController setPreloadedDescriptorsCount:[torReadyRouters count]];
+            dispatch_semaphore_signal(readyRouterSemaphore);
+            if (node.isV2Dir) {
+                readyCacheCount++;
+                dispatch_semaphore_signal(readyCacheSemaphore);
+            }
+            [viewController setPreloadedDescriptorsCount:[readyRouters count]];
         } break;
             
         default:
@@ -229,11 +269,10 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 
     torNodeRequestQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
 
-    torReadyRouters = [[NSMutableArray alloc] init];
-    torReadyRouterSemaphore = dispatch_semaphore_create(0);
-
-    torReadyCaches = [[NSMutableArray alloc] init];
-    torReadyCacheSemaphore= dispatch_semaphore_create(0);
+    readyRouters = [[NSMutableArray alloc] init];
+    readyCacheCount = 0;
+    readyRouterSemaphore = dispatch_semaphore_create(0);
+    readyCacheSemaphore= dispatch_semaphore_create(0);
 }
 
 - (void) dealloc {
@@ -241,11 +280,9 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 
     dispatch_release(torNodeRequestQueue);
 
-    [torReadyRouters release];
-    dispatch_release(torReadyRouterSemaphore);
-
-    [torReadyCaches release];
-    dispatch_release(torReadyCacheSemaphore);
+    [readyRouters release];
+    dispatch_release(readyRouterSemaphore);
+    dispatch_release(readyCacheSemaphore);
     
     self.v2DirNodesKeys = NULL;
     self.torNodesKeys = NULL;
