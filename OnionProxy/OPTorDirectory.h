@@ -41,5 +41,7 @@
  */
 - (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler;
 
+- (void) testFetchOneDescriptor;
+
 
 @end

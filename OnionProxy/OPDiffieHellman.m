@@ -12,8 +12,6 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
-//int const dhPrivateKeySize = 1024;
-//int const dhPrivateKeyLen = 128;
 int const dhPublicKeySize = 1024;
 int const dhPublicKeyLen = 128;
 

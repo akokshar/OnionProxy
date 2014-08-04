@@ -22,7 +22,12 @@
 @implementation OPTorDirectoryObject
 
 - (BOOL) downloadFromIp:(NSString *)ip port:(NSUInteger)port resource:(NSString *)resource to:(NSString *)file {
+//    NSURL *opdirTestUrl = [NSURL URLWithString:[NSString stringWithFormat:@"opdir://%@", resource]];
+//    [self logMsg:@"testUrl '%@'", opdirTestUrl.absoluteString];
+
     NSURL *opdirUrl = [NSURL URLWithString:[NSString stringWithFormat:@"opdir://%@:%lu%@", ip, (unsigned long)port, resource]];
+//    [self logMsg:@"origUrl '%@'", opdirUrl.absoluteString];
+
     NSURLRequest *request = [NSURLRequest requestWithURL:opdirUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10];
     NSURLResponse *response;
     NSError *error;

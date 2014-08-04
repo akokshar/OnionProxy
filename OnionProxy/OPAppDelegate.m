@@ -8,12 +8,14 @@
 
 #import "OPAppDelegate.h"
 #import "OPTorDirectory.h"
-#import "OPTorDirectoryProtocol.h"
+#import "OPProtocol.h"
 #import "OPCircuit.h"
 #import "OPTorNetwork.h"
+#import "OPListener.h"
 
 @interface OPAppDelegate() {
     NSStatusItem *statusItem;
+    OPListener *listener;
 }
 
 @end
@@ -21,7 +23,7 @@
 @implementation OPAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-    [NSURLProtocol registerClass:[OPTorDirectoryProtocol class]];
+    [NSURLProtocol registerClass:[OPProtocol class]];
 
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem retain];
@@ -32,11 +34,14 @@
     [icon release];
     statusItem.menu = self.mainMenu;
     statusItem.highlightMode = YES;
-    [[self.tabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
+    //[[self.tabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
 
+    listener = [[OPListener alloc] init];
+    [listener listenOnIPv4:@"0.0.0.0" andPort:8080];
 }
 
 - (void) applicationWillTerminate:(NSNotification *)notification {
+    [listener release];
     [[NSStatusBar systemStatusBar] removeStatusItem:statusItem];
 }
 
@@ -51,6 +56,10 @@
 
 - (IBAction)closeCircuit:(id)sender {
     [[OPTorNetwork network] closeCircuit];
+}
+
+- (IBAction)fetch:(id)sender {
+    [[OPTorDirectory directory] testFetchOneDescriptor];
 }
 
 - (IBAction)openStream:(id)sender {

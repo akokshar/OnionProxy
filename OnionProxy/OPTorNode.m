@@ -213,14 +213,14 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     if (result == YES) {
         //[self retainDescriptor];
         self.descriptorRetainCount = 1;
-        [self logMsg:@"descriptor is OK!!!. So happy :)"];
+        //[self logMsg:@"descriptor is OK!!!. So happy :)"];
     }
     else {
         [self logMsg:@"failed to load descriptor"];
         self.descriptorRetainCount = 0;
     }
 
-    return YES;
+    return result;
 }
 
 - (void) prefetchDescriptor {

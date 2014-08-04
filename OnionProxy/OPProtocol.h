@@ -8,6 +8,6 @@
 
 #import <Foundation/Foundation.h>
 
-@interface OPTorDirectoryProtocol : NSURLProtocol
+@interface OPProtocol : NSURLProtocol
 
 @end

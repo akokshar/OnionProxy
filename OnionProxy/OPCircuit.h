@@ -21,6 +21,7 @@ typedef enum {
 - (void) streamReceivedData:(NSData *)data;
 - (void) streamOpened;
 - (void) streamClosed;
+- (void) streamError;
 @end
 
 @class OPCircuit;

@@ -19,6 +19,8 @@
 - (IBAction)createCircuit:(id)sender;
 - (IBAction)closeCircuit:(id)sender;
 
+- (IBAction)fetch:(id)sender;;
+
 - (IBAction)openStream:(id)sender;
 - (IBAction)closeStream:(id)sender;
 

@@ -46,6 +46,7 @@ typedef struct {
 #pragma pack()
 
 NSString * const kOPCircuitNodeKey = @"NodeKey";
+NSString * const kOPCircuitNodeReadyKey = @"NodeReady";
 NSString * const kOPCircuitHandshakeKey = @"HandshakeKey";
 NSString * const kOPCircuitForwardDigestKey = @"ForwardDigestKey";
 NSString * const kOPCircuitBackwardDigestKey = @"BackwardDigestKey";
@@ -133,9 +134,12 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         if (_directoryNodeIndex == -1) {
             for (NSInteger i = self.nodes.count - 1; i >= 0 && _directoryNodeIndex == -1; i--) {
                 NSMutableDictionary *torCtx = [self.nodes objectAtIndex:i];
-                OPTorNode *node = [torCtx objectForKey:kOPCircuitNodeKey];
-                if (node.isV2Dir) {
-                    _directoryNodeIndex = i;
+                // last node is circuit might be not be ready yet
+                if ([torCtx objectForKey:kOPCircuitNodeReadyKey] != NULL) {
+                    OPTorNode *node = [torCtx objectForKey:kOPCircuitNodeKey];
+                    if (node.isV2Dir) {
+                        _directoryNodeIndex = i;
+                    }
                 }
             }
         }
@@ -524,6 +528,8 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 
 - (void) extendFinishWithResult:(BOOL)result {
     if (result) {
+        NSMutableDictionary *lastNodeCtx = [self.nodes lastObject];
+        [lastNodeCtx setValue:[NSNumber numberWithBool:YES] forKey:kOPCircuitNodeReadyKey];
         [self logMsg:@"Circuit extended. current len:%lu", (unsigned long)self.circuitLength];
     }
     else {

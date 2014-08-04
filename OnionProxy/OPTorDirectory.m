@@ -162,6 +162,18 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     });
 }
 
+- (void) testFetchOneDescriptor {
+    if (self.torNodesIndex >= self.torNodesKeys.count) {
+        self.torNodesIndex = 0;
+        self.torNodesKeys = [self arrayByShufflingArray:self.torNodesKeys];
+    }
+    OPTorNode *node = [consensus.nodes objectForKey:[self.torNodesKeys objectAtIndex:self.torNodesIndex]];
+    node.delegate = self;
+    [node prefetchDescriptor];
+
+    self.torNodesIndex++;
+}
+
 - (void) node:(OPTorNode *)node event:(OPTorNodeEvent)event {
     switch (event) {
         case OPTorNodeDescriptorReadyEvent: {
