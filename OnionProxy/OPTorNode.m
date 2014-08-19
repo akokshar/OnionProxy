@@ -36,6 +36,9 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @property (readonly, getter = getCacheFilePath) NSString *cacheFilePath;
 @property (readonly, getter = getResourcePath) NSString *resourcePath;
 
+@property (atomic) BOOL isExitPolicyAcceptRule;
+@property (retain) NSMutableArray *exitRanges;
+
 @property (retain) NSString *ipStr;
 
 @property (retain, getter = getFingerprint) NSData *fingerprint;
@@ -152,10 +155,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         
         if (![self.descriptorDigest isEqualToData:descriptorDigest]) {
             [self logMsg:@"Digest missmatch (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
-//            [pool release];
-//            dispatch_semaphore_signal(descriptorUpdateSemaphore);
             result = NO;
-//            return NO;
         }
 
         if (result == YES) {
@@ -167,10 +167,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             NSString *signatureStr = [rawDescriptorStr substringWithRange:[match rangeAtIndex:3]];
             if (![self.identKey verifyBase64SignatureStr:signatureStr forDataDigest:self.descriptorDigest]) {
                 [self logMsg:@"Signature verification failed (OR fingerprint=%@). Rejecting router descriptor.", self.fingerprint];
-//                [pool release];
-//                dispatch_semaphore_signal(descriptorUpdateSemaphore);
                 result = NO;
-//                return NO;
             }
         }
 
@@ -191,20 +188,13 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
             }
             else {
                 [self logMsg:@"Descriptor does not contain onion-key (OR fingerprint=%@)", self.fingerprint];
-                //                [pool release];
-                //                dispatch_semaphore_signal(descriptorUpdateSemaphore);
                 result = NO;
-                //                return NO;
             }
         }
-        //
     }
     else {
         [self logMsg:@"descriptor pattern missmatch :\n'%@'", rawDescriptorStr];
-//        [pool release];
-//        dispatch_semaphore_signal(descriptorUpdateSemaphore);
         result = NO;
-//        return NO;
     }
     
     [pool release];
@@ -291,25 +281,38 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     }
 }
 
+- (BOOL) canExitToPort:(uint16)port {
+    if (!self.isExit) {
+        return NO;
+    }
+
+    for (NSValue *rangeValue in self.exitRanges) {
+        NSRange range = [rangeValue rangeValue];
+        return (range.location <= port <= range.length);
+    }
+    
+    return NO;
+}
+
 - (void) initializeWithParams:(NSDictionary *)nodeParams {
     self.fingerprint = [nodeParams objectForKey:nodeFingerprintDataKey];
     self.descriptorDigest = [nodeParams objectForKey:nodeDescriptorDataKey];
 
-    NSString *flags = [nodeParams objectForKey:nodeFlagsStrKey];
-    NSArray *array = [flags componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    _isValid = [array containsObject:@"Valid"];
-    _isNamed = [array containsObject:@"Named"];
-    _isUnnamed = [array containsObject:@"Unamed"];
-    _isRunning = [array containsObject:@"Running"];
-    _isStable = [array containsObject:@"Stable"];
-    _isExit = [array containsObject:@"Exit"];
-    _isBadExit = [array containsObject:@"BadExit"];
-    _isFast = [array containsObject:@"Fast"];
-    _isGuard = [array containsObject:@"Guard"];
-    _isAuthority = [array containsObject:@"Authority"];
-    _isV2Dir = [array containsObject:@"V2Dir"];
-    _isBadDirectory = [array containsObject:@"BadDirectory"];
-    _isHSDir = [array containsObject:@"HSDir"];
+    NSString *flagsStr = [nodeParams objectForKey:nodeFlagsStrKey];
+    NSArray *flagsArray = [flagsStr componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    _isValid = [flagsArray containsObject:@"Valid"];
+    _isNamed = [flagsArray containsObject:@"Named"];
+    _isUnnamed = [flagsArray containsObject:@"Unamed"];
+    _isRunning = [flagsArray containsObject:@"Running"];
+    _isStable = [flagsArray containsObject:@"Stable"];
+    _isExit = [flagsArray containsObject:@"Exit"];
+    _isBadExit = [flagsArray containsObject:@"BadExit"];
+    _isFast = [flagsArray containsObject:@"Fast"];
+    _isGuard = [flagsArray containsObject:@"Guard"];
+    _isAuthority = [flagsArray containsObject:@"Authority"];
+    _isV2Dir = [flagsArray containsObject:@"V2Dir"];
+    _isBadDirectory = [flagsArray containsObject:@"BadDirectory"];
+    _isHSDir = [flagsArray containsObject:@"HSDir"];
     
     NSString *ipStr = [nodeParams objectForKey:nodeIpStrKey];
     if (![self.ipStr isEqualToString:ipStr]) {
@@ -321,7 +324,36 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     _orPort = [orPort intValue];
     NSString *dirPort = [nodeParams objectForKey:nodeDirPortStrKey];
     _dirPort = [dirPort intValue];
-    
+
+    // reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
+    NSString *policyConfigutationStr = [[nodeParams objectForKey:nodePolicyStrKey] uppercaseString];
+    NSString *exitRangesStr = NULL;
+    if ([policyConfigutationStr hasPrefix:@"ACCEPT"]) {
+        self.isExitPolicyAcceptRule = YES;
+        exitRangesStr = [policyConfigutationStr substringFromIndex:7];
+    }
+    else if ([policyConfigutationStr hasPrefix:@"REJECT"]) {
+        self.isExitPolicyAcceptRule = NO;
+        exitRangesStr = [policyConfigutationStr substringFromIndex:7];
+    }
+    else {
+        [self logMsg:@"cant parse exit policy configuration string: '%@'", policyConfigutationStr];
+        _isExit = NO;
+    }
+
+    if (exitRangesStr) {
+        //[self logMsg:@"%@", exitRangesStr];
+        NSArray *ranges = [exitRangesStr componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@","]];
+
+        for (NSString *rangeStr in ranges) {
+            NSRange range = NSRangeFromString(rangeStr);
+            if (range.location != 0 && range.length <= 65535) {
+                [self.exitRanges addObject:[NSValue valueWithRange:range]];
+            }
+        }
+        //[self logMsg:@"found %lu ranges", (unsigned long)self.exitRanges.count];
+    }
+
     self.lastUpdated = [NSDate date];
 }
 
@@ -344,7 +376,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         _descriptorRetainCount = 0;
         
         self.isUpdating = NO;
-        
+
+        self.exitRanges  = [NSMutableArray array];
         [self initializeWithParams:nodeParams];
     }
     return self;
@@ -352,7 +385,9 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 
 - (void) dealloc {
     [self logMsg:@"dealloc TorNode"];
-    
+
+    self.exitRanges = NULL;
+
     self.ipStr = NULL;
     
     self.fingerprint = NULL;

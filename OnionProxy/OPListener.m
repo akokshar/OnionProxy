@@ -101,6 +101,7 @@ void socketCallBack(CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef 
 
     self.socketRef =  CFSocketCreate(kCFAllocatorDefault, PF_INET, SOCK_STREAM, IPPROTO_TCP, kCFSocketAcceptCallBack, &socketCallBack, &socketContext);
     if (self.socketRef == NULL) {
+        [self logMsg:@"Failed to create listen socket for '%@:%i'", ip, port];
         return NO;
     }
 
@@ -110,9 +111,7 @@ void socketCallBack(CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef 
     sin.sin_len = sizeof(sin);
     sin.sin_family = AF_INET; /* Address family */
     sin.sin_port = htons(port); /* Or a specific port */
-    uint32_t addr;
-    inet_pton(AF_INET, [ip cStringUsingEncoding:NSUTF8StringEncoding], &addr);
-    sin.sin_addr.s_addr = htonl(addr);
+    inet_aton([ip cStringUsingEncoding:NSUTF8StringEncoding], &sin.sin_addr);
 
     CFDataRef sinData= CFDataCreate(kCFAllocatorDefault, (UInt8 *)&sin, sizeof(sin));
     CFSocketError socketError = CFSocketSetAddress(self.socketRef, sinData);
@@ -131,21 +130,23 @@ void socketCallBack(CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef 
 }
 
 - (void) startListen {
-    self.isRunning = YES;
+    if (self.socketRef == NULL) {
+        return;
+    }
+
     [listenThread start];
     [self performSelector:@selector(doStartListen) onThread:listenThread withObject:NULL waitUntilDone:YES];
 }
 
 - (void) doStartListen {
-    if (self.socketRef == NULL) {
-        self.isRunning = NO;
-        return;
-    }
+
 }
 
 - (void) run {
-    [self logMsg:@"start listening thread"];
+    [self logMsg:@"listening thread started"];
     @autoreleasepool {
+        self.isRunning = YES;
+
         NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
         CFRunLoopSourceRef socketSource = CFSocketCreateRunLoopSource(kCFAllocatorDefault, self.socketRef, 0);
         CFRunLoopAddSource([runLoop getCFRunLoop], socketSource, kCFRunLoopDefaultMode);
@@ -155,7 +156,7 @@ void socketCallBack(CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef 
         CFRunLoopRemoveSource([runLoop getCFRunLoop], socketSource, kCFRunLoopDefaultMode);
         CFRelease(socketSource);
     }
-    [self logMsg:@"stop listening thread"];
+    [self logMsg:@"listening thread finished"];
 }
 
 - (void) doStopListen {
@@ -181,6 +182,7 @@ void socketCallBack(CFSocketRef s, CFSocketCallBackType callbackType, CFDataRef 
 
 - (void) dealloc {
     [self stopListen];
+    [listenThread release];
     self.socketRef = NULL;
     [super dealloc];
 }

@@ -12,6 +12,7 @@
 #import "OPCircuit.h"
 #import "OPTorNetwork.h"
 #import "OPListener.h"
+#import "OPHTTPProxy.h"
 
 @interface OPAppDelegate() {
     NSStatusItem *statusItem;
@@ -21,6 +22,10 @@
 @end
 
 @implementation OPAppDelegate
+
+- (void) listener:(OPListener *)listener connectionWithInputStream:(NSInputStream *)iStream andOutputStream:(NSOutputStream *)oStream {
+    [OPHTTPProxy serveConnectionWithInputStream:iStream andOutputStream:oStream];
+}
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     [NSURLProtocol registerClass:[OPProtocol class]];
@@ -34,10 +39,10 @@
     [icon release];
     statusItem.menu = self.mainMenu;
     statusItem.highlightMode = YES;
-    //[[self.tabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
+    [[self.tabView tabViewItemAtIndex:1] setView:[OPTorDirectory directory].view];
 
-    listener = [[OPListener alloc] init];
-    [listener listenOnIPv4:@"0.0.0.0" andPort:8080];
+    listener = [[OPListener alloc] initWithDelegate:self];
+    [listener listenOnIPv4:@"127.0.0.1" andPort:8080];
 }
 
 - (void) applicationWillTerminate:(NSNotification *)notification {

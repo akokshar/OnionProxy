@@ -469,9 +469,9 @@ NSString *isCerificateCheckedKey = @"isOPCerificateChecked";
 }
 
 - (void) processCell:(OPCell *)cell {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    [self doProcessCell:cell];
-    [pool release];
+    @autoreleasepool {
+        [self doProcessCell:cell];
+    }
 }
 
 - (void) doProcessCell:(OPCell *)cell {

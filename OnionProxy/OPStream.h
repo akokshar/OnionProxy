@@ -11,24 +11,23 @@
 
 @class OPStream;
 
-@protocol OPHTTPStreamDelegate
-- (void) stream:(OPStream *)stream didReceiveResponse:(NSURLResponse *)response;
+@protocol OPStreamDelegate
+- (void) streamDidConnect:(OPStream *)stream;
+- (void) streamDidDisconnect:(OPStream *)stream;
 - (void) stream:(OPStream *)stream didReceiveData:(NSData *)data;
-- (void) streamDidFinishLoading:(OPStream *)stream;
 - (void) stream:(OPStream *)connection didFailWithError:(NSError *)error;
 @end
 
 @interface OPStream : OPObject <OPCircuitStreamDelegate>
 
-- (id) initForDirectoryServiceWithCircuit:(OPCircuit *)circuit client:(id<OPHTTPStreamDelegate>)client request:(NSURLRequest *)request;
-- (id) initWithCircuit:(OPCircuit *)circuit destIp:(NSString *)destIp destPort:(uint16)destPort client:(id<OPHTTPStreamDelegate>)client;
+- (id) initDirectoryStreamWithCircuit:(OPCircuit *)circuit client:(id<OPStreamDelegate>)client;
+- (id) initWithCircuit:(OPCircuit *)circuit destIp:(NSString *)destIp destPort:(uint16)destPort client:(id<OPStreamDelegate>)client;
 
 - (void) open;
 - (void) close;
 - (void) sendData:(NSData *)data;
 
-+ (OPStream *) streamForClient:(id<OPHTTPStreamDelegate>)client withDirectoryResourceRequest:(NSURLRequest *)request;
-+ (OPStream *) directoryStreamForClient:(id<OPHTTPStreamDelegate>)client;
-
++ (OPStream *) directoryStreamForClient:(id<OPStreamDelegate>)client;
++ (OPStream *) streamToPort:(uint16)port forClient:(id<OPStreamDelegate>)client;
 
 @end

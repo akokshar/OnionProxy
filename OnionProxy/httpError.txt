@@ -1,0 +1,11 @@
+HTTP/1.0 400 Bad Request
+Content-Type: text/html;
+Content-Length: 129
+
+<HEAD>
+<TITLE>Onion proxy is not yet ready</TITLE>
+</HEAD>
+
+<BODY>
+<CENTER><H1>Onion proxy is not yet ready</H1></CENTER>
+</BODY>

@@ -11,7 +11,7 @@
 typedef enum {
     rowTotalNodesCount,
     rowDirNodesCount,
-    rowTorFastNodesCount,
+    rowExitNodesCount,
     rowSpace1,
     rowPreloadedDescriptorsCount,
     rowSpace2,
@@ -45,9 +45,9 @@ typedef enum {
     [self updateValueAtRow:rowDirNodesCount];
 }
 
-- (void) setTorFastNodesCount:(NSInteger) count {
-    [values setObject:[NSString stringWithFormat:@"%li", (long)count] forKey:[NSNumber numberWithInt:rowTorFastNodesCount]];
-    [self updateValueAtRow:rowTorFastNodesCount];
+- (void) setExitNodesCount:(NSInteger) count {
+    [values setObject:[NSString stringWithFormat:@"%li", (long)count] forKey:[NSNumber numberWithInt:rowExitNodesCount]];
+    [self updateValueAtRow:rowExitNodesCount];
 }
 
 - (void) setPreloadedDescriptorsCount:(NSInteger) count {
@@ -105,7 +105,7 @@ typedef enum {
         names = [[NSDictionary alloc] initWithObjectsAndKeys:
                  @"Total", [NSNumber numberWithInt:rowTotalNodesCount],
                  @"Directory servers", [NSNumber numberWithInt:rowDirNodesCount],
-                 @"Fast routers", [NSNumber numberWithInt:rowTorFastNodesCount],
+                 @"Exit nodes", [NSNumber numberWithInt:rowExitNodesCount],
                  @"", [NSNumber numberWithInt:rowSpace1],
                  @"Preloaded descriptors", [NSNumber numberWithInt:rowPreloadedDescriptorsCount],
                  @"", [NSNumber numberWithInt:rowSpace2],
@@ -116,7 +116,7 @@ typedef enum {
         values = [[NSMutableDictionary alloc] initWithObjectsAndKeys:
                   @"0", [NSNumber numberWithInt:rowTotalNodesCount],
                   @"0", [NSNumber numberWithInt:rowDirNodesCount],
-                  @"0", [NSNumber numberWithInt:rowTorFastNodesCount],
+                  @"0", [NSNumber numberWithInt:rowExitNodesCount],
                   @"", [NSNumber numberWithInt:rowSpace1],
                   @"0", [NSNumber numberWithInt:rowPreloadedDescriptorsCount],
                   @"", [NSNumber numberWithInt:rowSpace2],

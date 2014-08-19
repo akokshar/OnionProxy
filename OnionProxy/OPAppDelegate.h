@@ -7,8 +7,9 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "OPListener.h"
 
-@interface OPAppDelegate : NSObject <NSApplicationDelegate>
+@interface OPAppDelegate : NSObject <NSApplicationDelegate, OPListenerDelegate>
 
 @property (assign) IBOutlet NSMenu *mainMenu;
 @property (assign) IBOutlet NSWindow *window;

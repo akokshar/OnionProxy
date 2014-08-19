@@ -18,7 +18,7 @@ typedef enum {
 } OPCircuitStreamEvent;
 
 @protocol OPCircuitStreamDelegate
-- (void) streamReceivedData:(NSData *)data;
+- (void) streamDidReceiveData:(NSData *)data;
 - (void) streamOpened;
 - (void) streamClosed;
 - (void) streamError;
@@ -56,6 +56,7 @@ typedef enum {
 
 /**
  * Create new stream context to access directory service for specified client.
+ * Return 0 if directory service is not afailable on this Circuit
  */
 - (OPStreamId) openDirectoryStreamWithDelegate:(id<OPCircuitStreamDelegate>)delegate;
 

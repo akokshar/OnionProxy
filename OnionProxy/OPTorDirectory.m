@@ -25,17 +25,20 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 }
 
 @property (assign) NSUInteger v2DirNodesIndex;
-@property (retain, atomic) NSArray *v2DirNodesKeys;
+@property (retain, atomic) NSMutableArray *v2DirNodesKeys;
 
 @property (assign) NSUInteger torNodesIndex;
-@property (retain, atomic) NSArray *torNodesKeys;
+@property (retain, atomic) NSMutableArray *torNodesKeys;
+
+@property (assign) NSUInteger exitNodesIndex;
+@property (retain, atomic) NSMutableArray *exitNodesKeys;
 
 - (void) directoryInit;
 
 - (void) prefetchDescriptors;
 
 - (void) shuffleArray:(NSMutableArray *)array;
-- (NSArray *) arrayByShufflingArray:(NSArray *)array;
+//- (NSArray *) arrayByShufflingArray:(NSArray *)array;
 
 @end
 
@@ -73,7 +76,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         OPTorNode *readyNode = NULL;
 
         @synchronized(readyRouters) {
-            for (NSInteger i = [readyRouters count] - 1; i >= 0; i--) {
+            for (NSInteger i = [readyRouters count] - 1; (i >= 0) && (readyNode == NULL); i--) {
                 readyNode = [readyRouters objectAtIndex:i];
                 if (readyNode.isV2Dir) {
                     [readyNode retain];
@@ -133,7 +136,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         for (NSUInteger i = readyRouters.count; i < torDescriptorsReadyMinimum; i++) {
             if (self.torNodesIndex >= self.torNodesKeys.count) {
                 self.torNodesIndex = 0;
-                self.torNodesKeys = [self arrayByShufflingArray:self.torNodesKeys];
+                [self shuffleArray:self.torNodesKeys];
             }
             OPTorNode *node = [consensus.nodes objectForKey:[self.torNodesKeys objectAtIndex:self.torNodesIndex]];
             node.delegate = self;
@@ -147,7 +150,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         for (NSUInteger i = readyCacheCount; i < torDescriptorsReadyMinimum; i++) {
             if (self.v2DirNodesIndex >= self.v2DirNodesKeys.count) {
                 self.v2DirNodesIndex = 0;
-                self.v2DirNodesKeys = [self arrayByShufflingArray:self.v2DirNodesKeys];
+                [self shuffleArray:self.v2DirNodesKeys];
             }
             OPTorNode *node = [consensus.nodes objectForKey:[self.v2DirNodesKeys objectAtIndex:self.v2DirNodesIndex]];
             node.delegate = self;
@@ -165,7 +168,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 - (void) testFetchOneDescriptor {
     if (self.torNodesIndex >= self.torNodesKeys.count) {
         self.torNodesIndex = 0;
-        self.torNodesKeys = [self arrayByShufflingArray:self.torNodesKeys];
+        [self shuffleArray:self.torNodesKeys];
     }
     OPTorNode *node = [consensus.nodes objectForKey:[self.torNodesKeys objectAtIndex:self.torNodesIndex]];
     node.delegate = self;
@@ -198,32 +201,54 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         return;
     }
 
-    for (NSUInteger i = 0; i < [array count] - 1; i++) {
-        NSUInteger j = arc4random() % [array count];
-        [array exchangeObjectAtIndex:i withObjectAtIndex:j];
+    @synchronized(array) {
+        for (NSUInteger i = 0; i < [array count] - 1; i++) {
+            NSUInteger j = arc4random() % [array count];
+            [array exchangeObjectAtIndex:i withObjectAtIndex:j];
+        }
     }
 }
 
-- (NSArray *) arrayByShufflingArray:(NSArray *)array {
-    if (array == NULL || [array count] == 0) {
-        return array;
-    }
-    
-    NSMutableArray *tempArray = [NSMutableArray arrayWithArray:array];
-    for (NSUInteger i = 0; i < [tempArray count] - 1; i++) {
-        NSUInteger j = arc4random() % [tempArray count];
-        [tempArray exchangeObjectAtIndex:i withObjectAtIndex:j];
-    }
-    return tempArray;
-}
+- (void) consensusEvent:(OPConsensusNodeEvent)event forNodeWithKey:(id)nodeKey {
+    OPTorNode *node = [consensus.nodes objectForKey:nodeKey];
 
-- (void) consensusEvent:(OPConsensusNodeEvent)event forNode:(OPTorNode *)node {
+    if (node == NULL) {
+        [self logMsg:@"consensusEvent 'cant find node'"];
+        return;
+    }
+
     switch (event) {
         case OPConsensusEventNodeAdded: {
+            if (node.isExit) {
+                @synchronized(self.exitNodesKeys) {
+                    [self.exitNodesKeys addObject:nodeKey];
+                }
+            }
+
+            if (node.isV2Dir) {
+                @synchronized(self.v2DirNodesKeys) {
+                    [self.v2DirNodesKeys addObject:nodeKey];
+                }
+            }
+
+            @synchronized(self.torNodesKeys) {
+                [self.torNodesKeys addObject:nodeKey];
+            }
 
         } break;
 
-        case OPConsensusEventNodeDeleted: {
+        case OPConsensusEventNodeWillDelete: {
+            @synchronized(self.exitNodesKeys) {
+                [self.exitNodesKeys removeObject:nodeKey];
+            }
+
+            @synchronized(self.v2DirNodesKeys) {
+                [self.v2DirNodesKeys removeObject:nodeKey];
+            }
+            
+            @synchronized(self.torNodesKeys) {
+                [self.torNodesKeys removeObject:nodeKey];
+            }
 
         } break;
     }
@@ -236,32 +261,15 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     [viewController setConsensusFreshUntil:consensus.freshUntil];
 
     [viewController setTotalNodesCount:consensus.nodes.count];
+    [viewController setExitNodesCount:self.exitNodesKeys.count];
+    [viewController setDirNodesCount:self.v2DirNodesKeys.count];
+    //    [viewController setTotalNodesCount:consensus.nodes.count];
 
-    @synchronized(self.v2DirNodesKeys) {
-        NSSet *v2DirNodesSet = [consensus.nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
-            OPTorNode *node = (OPTorNode *)obj;
-            return node.isV2Dir && node.isRunning;
-        }];
+    [self shuffleArray:self.v2DirNodesKeys];
+    [self shuffleArray:self.torNodesKeys];
+    [self shuffleArray:self.exitNodesKeys];
 
-        self.v2DirNodesKeys = [self arrayByShufflingArray:[v2DirNodesSet allObjects]];
-        self.v2DirNodesIndex = 0;
-
-        [viewController setDirNodesCount:self.v2DirNodesKeys.count];
-    }
-
-    @synchronized(self.torNodesKeys) {
-        NSSet *torNodesSet = [consensus.nodes keysOfEntriesPassingTest:^BOOL(id key, id obj, BOOL *stop) {
-            OPTorNode *node = (OPTorNode *)obj;
-            return node.isFast && node.isRunning;
-        }];
-
-        self.torNodesKeys = [self arrayByShufflingArray:[torNodesSet allObjects]];
-        self.torNodesIndex = 0;
-
-        [viewController setTorFastNodesCount:self.torNodesKeys.count];
-    }
-
-    [self logMsg:@"Nodes updated."];
+    [self logMsg:@"Directory updated."];
 
     [self prefetchDescriptors];
 }
@@ -273,11 +281,14 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
   
     viewController = [[OPTorDirectoryViewController alloc] initWithNibName:@"OPTorDirectory" bundle:NULL];
 
-    self.v2DirNodesKeys = NULL;
+    self.v2DirNodesKeys = [NSMutableArray array];
     self.v2DirNodesIndex = 0;
     
-    self.torNodesKeys = NULL;
+    self.torNodesKeys = [NSMutableArray array];
     self.torNodesIndex = 0;
+
+    self.exitNodesKeys = [NSMutableArray array];
+    self.exitNodesIndex = 0;
 
     torNodeRequestQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
 
@@ -298,6 +309,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     
     self.v2DirNodesKeys = NULL;
     self.torNodesKeys = NULL;
+    self.exitNodesKeys = NULL;
 
     [super dealloc];
 }

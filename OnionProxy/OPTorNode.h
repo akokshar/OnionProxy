@@ -69,6 +69,8 @@ typedef enum {
 - (void) releaseDescriptor;
 - (void) clearCashedDescriptor;
 
+- (BOOL) canExitToPort:(uint16)port;
+
 - (id) initWithParams:(NSDictionary *)nodeParams;
 
 @end

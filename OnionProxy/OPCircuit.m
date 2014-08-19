@@ -72,7 +72,9 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 @property (readonly, getter=getDirectoryNodeIndex) NSInteger directoryNodeIndex;
 @property (retain) NSMutableDictionary *streams;
 
-- (uint16) generateStreamId;
+- (OPStreamId) addEmptyStreamCtx;
+- (NSMutableDictionary *) getStreamCtxWithStreamId:(OPStreamId)streamId;
+- (void) removeStreamCtxWithStreamId:(OPStreamId)streamId;
 
 - (void) extendToNode:(OPTorNode *)node;
 - (void) extend;
@@ -286,7 +288,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         return;
     }
     
-    NSMutableData *cellData = [[NSMutableData alloc] initWithCapacity:509];
+    NSMutableData *cellData = [[NSMutableData alloc] initWithCapacity:OPCellPayloadLen];
     [cellData setLength:sizeof(OPRelayCellPayload)];
     OPRelayCellPayload *cell = (OPRelayCellPayload *)cellData.mutableBytes;
     cell->relayCommand = command;
@@ -296,7 +298,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     uint16 dataLen = (uint16)[data length];
     cell->length = CFSwapInt16HostToBig(dataLen);
     [cellData appendData:data];
-    [cellData setLength:509];
+    [cellData setLength:OPCellPayloadLen];
     
     NSDictionary *destRouter = [self.nodes objectAtIndex:nodeIndex];
 
@@ -332,21 +334,22 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         } break;
 
         case OPRelayCommanConnected: {
-            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
+            [streamCtx setObject:[NSNumber numberWithBool:YES] forKey:kOPStreamIsConnectedKey];
             id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
             [delegate streamOpened];
         } break;
 
         case OPRelayCommanEnd: {
-            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
             [streamCtx setObject:[NSNumber numberWithBool:NO] forKey:kOPStreamIsConnectedKey];
             [self closeStream:streamId];
         } break;
 
         case OPRelayCommanRelay: {
-            NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInteger:streamId]];
+            NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
             id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
-            [delegate streamReceivedData:data];
+            [delegate streamDidReceiveData:data];
         } break;
 
         case OPRelayCommanTruncated: {
@@ -564,26 +567,56 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 }
 
 - (void) close {
-    [self.connection disconnect];
 
-    [self.streams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        NSDictionary *streamCtx = [self.streams objectForKey:obj];
-        id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
-        [streamDelegate streamClosed];
-    }];
+    NSArray *openedStreams = [self.streams allKeys];
+
+    for (NSNumber *key in openedStreams) {
+        OPStreamId streamId = [key integerValue];
+        [self closeStream:streamId];
+    }
+
+//    [self.streams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+//        NSDictionary *streamCtx = [self.streams objectForKey:key];
+//        id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
+//        [streamDelegate streamClosed];
+//    }];
+
+    [self.connection disconnect];
 
     [self.streams removeAllObjects];
     [self.nodes removeAllObjects];
     [self.delegate circuit:self event:OPCircuitEventClosed];
 }
 
-- (OPStreamId) generateStreamId {
+- (OPStreamId) addEmptyStreamCtx {
+
     OPStreamId nextId = streamIdCounter + arc4random() % 3;
     if (nextId == 0) {
         nextId++;
     }
     streamIdCounter = nextId;
-    return streamIdCounter;
+
+    NSMutableDictionary *streamCtx = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                      [NSNumber numberWithBool:NO], kOPStreamIsConnectedKey,
+                                      nil];
+    @synchronized(self.streams) {
+        [self.streams setObject:streamCtx forKey:[NSNumber numberWithInt:nextId]];
+    }
+
+    return nextId;
+}
+
+- (NSMutableDictionary *) getStreamCtxWithStreamId:(OPStreamId)streamId {
+    @synchronized(self.streams) {
+        NSMutableDictionary *streamCtx = [self.streams objectForKey:[NSNumber numberWithInt:streamId]];
+        return [[streamCtx retain] autorelease];
+    }
+}
+
+- (void) removeStreamCtxWithStreamId:(OPStreamId)streamId {
+    @synchronized(self.streams) {
+        [self.streams removeObjectForKey:[NSNumber numberWithInt:streamId]];
+    }
 }
 
 - (OPStreamId) openDirectoryStreamWithDelegate:(id<OPCircuitStreamDelegate>)delegate {
@@ -591,19 +624,19 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         return 0;
     }
 
-    uint16 streamId = [self generateStreamId];
-    NSMutableDictionary *streamCtx = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                   delegate, kOPStreamDelegateKey,
-                                   [NSNumber numberWithInteger:self.directoryNodeIndex], kOPStreamExitNodeIndex,
-                                   [NSNumber numberWithBool:YES], kOPStreamIsConnectedKey,
-                                   nil];
-    [self.streams setObject:streamCtx forKey:[NSNumber numberWithInt:streamId]];
+    OPStreamId streamId = [self addEmptyStreamCtx];
+    NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
+
+    [streamCtx setObject:delegate forKey:kOPStreamDelegateKey];
+    [streamCtx setObject:[NSNumber numberWithInteger:self.directoryNodeIndex] forKey:kOPStreamExitNodeIndex];
+
     [self relayCommand:OPRelayCommanBeginDir toNode:self.directoryNodeIndex forStream:streamId withData:NULL];
+
     return streamId;
 }
 
 - (void) closeStream:(OPStreamId)streamId {
-    NSMutableDictionary *streamCtx = [self.streams objectForKeyedSubscript:[NSNumber numberWithInt:streamId]];
+    NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
     if (streamCtx == NULL) {
         return;
     }
@@ -617,7 +650,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
     [streamDelegate streamClosed];
 
-    [self.streams removeObjectForKey:[NSNumber numberWithInt:streamId]];
+    [self removeStreamCtxWithStreamId:streamId];
 }
 
 - (void) sendData:(NSData *)data overStream:(OPStreamId)streamId {
@@ -626,7 +659,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 
     }
 
-    NSMutableDictionary *streamCtx = [self.streams objectForKeyedSubscript:[NSNumber numberWithInt:streamId]];
+    NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
     if (streamCtx == NULL) {
         return;
     }

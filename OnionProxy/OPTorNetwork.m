@@ -73,19 +73,19 @@
 }
 
 - (void) openStream {
-    NSURL *testUrl = [NSURL URLWithString:@"opdir:///tor/server/d/71D7CE3A58DB476C5790244507ADC991783AB904.z"];
-    NSURLRequest *testRequest = [NSURLRequest requestWithURL:testUrl];
-
-    self.s = [OPStream streamForClient:NULL withDirectoryResourceRequest:testRequest];
-    [self logMsg:@"stream created. retain count %lu", (unsigned long)self.s .retainCount];
-    [self.s open];
-    [self logMsg:@"stream opened. retain count %lu", (unsigned long)self.s .retainCount];
+//    NSURL *testUrl = [NSURL URLWithString:@"opdir:///tor/server/d/71D7CE3A58DB476C5790244507ADC991783AB904.z"];
+//    NSURLRequest *testRequest = [NSURLRequest requestWithURL:testUrl];
+//
+//    self.s = [OPStream directoryStreamForClient:NULL];
+//    [self logMsg:@"stream created. retain count %lu", (unsigned long)self.s .retainCount];
+//    [self.s open];
+//    [self logMsg:@"stream opened. retain count %lu", (unsigned long)self.s .retainCount];
 }
 
 - (void) closeStream {
-    [self.s  close];
-    [self logMsg:@"stream closed. retain count %lu", (unsigned long)self.s .retainCount];
-    self.s  = NULL;
+//    [self.s  close];
+//    [self logMsg:@"stream closed. retain count %lu", (unsigned long)self.s .retainCount];
+//    self.s  = NULL;
 }
 
 + (OPTorNetwork *) network {

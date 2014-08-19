@@ -36,6 +36,8 @@
 		34511EB918E70AEB00CE02E5 /* OPDiffieHellman.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EB818E70AEB00CE02E5 /* OPDiffieHellman.m */; };
 		34511EBD18EF285300CE02E5 /* OPCSP.m in Sources */ = {isa = PBXBuildFile; fileRef = 34511EBC18EF285300CE02E5 /* OPCSP.m */; };
 		346A0EB8198953AF00AE9750 /* OPListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 346A0EB7198953AF00AE9750 /* OPListener.m */; };
+		34898EB6199030A7003A97B7 /* OPHTTPProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = 34898EB5199030A7003A97B7 /* OPHTTPProxy.m */; };
+		34898EB819917345003A97B7 /* httpError.txt in Resources */ = {isa = PBXBuildFile; fileRef = 34898EB719917345003A97B7 /* httpError.txt */; };
 		348FDF46196830F2007D40B0 /* OPDirectoryStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 348FDF45196830F2007D40B0 /* OPDirectoryStore.m */; };
 		34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */ = {isa = PBXBuildFile; fileRef = 34A1F424192898EE00CF6EEF /* OPBase64.m */; };
 		34B9B2DF196CA4C60021041C /* OPStream.m in Sources */ = {isa = PBXBuildFile; fileRef = 34B9B2DE196CA4C60021041C /* OPStream.m */; };
@@ -131,6 +133,9 @@
 		34511EBC18EF285300CE02E5 /* OPCSP.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPCSP.m; sourceTree = "<group>"; };
 		346A0EB6198953AF00AE9750 /* OPListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPListener.h; sourceTree = "<group>"; };
 		346A0EB7198953AF00AE9750 /* OPListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPListener.m; sourceTree = "<group>"; };
+		34898EB4199030A7003A97B7 /* OPHTTPProxy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OPHTTPProxy.h; path = ../OPHTTPProxy.h; sourceTree = "<group>"; };
+		34898EB5199030A7003A97B7 /* OPHTTPProxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = OPHTTPProxy.m; path = ../OPHTTPProxy.m; sourceTree = "<group>"; };
+		34898EB719917345003A97B7 /* httpError.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = httpError.txt; sourceTree = "<group>"; };
 		348FDF44196830F2007D40B0 /* OPDirectoryStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPDirectoryStore.h; sourceTree = "<group>"; };
 		348FDF45196830F2007D40B0 /* OPDirectoryStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OPDirectoryStore.m; sourceTree = "<group>"; };
 		34A1F423192898EE00CF6EEF /* OPBase64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OPBase64.h; sourceTree = "<group>"; };
@@ -234,6 +239,8 @@
 				34FE08AB197ED82500CFE611 /* Tor */,
 				346A0EB6198953AF00AE9750 /* OPListener.h */,
 				346A0EB7198953AF00AE9750 /* OPListener.m */,
+				34898EB4199030A7003A97B7 /* OPHTTPProxy.h */,
+				34898EB5199030A7003A97B7 /* OPHTTPProxy.m */,
 				341C444718A621E4002018E1 /* OPAppDelegate.h */,
 				341C444818A621E4002018E1 /* OPAppDelegate.m */,
 				341C447318A6355D002018E1 /* OPConfig.plist */,
@@ -301,6 +308,7 @@
 		34E1A6651954BE60004B1A4E /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				34898EB719917345003A97B7 /* httpError.txt */,
 				34E1A6701954BE8F004B1A4E /* icon.icns */,
 			);
 			name = Resources;
@@ -444,6 +452,7 @@
 				34C1159C1940E40100A7CD44 /* MainMenu.xib in Resources */,
 				341C447418A6355D002018E1 /* OPConfig.plist in Resources */,
 				34E1A6711954BE8F004B1A4E /* icon.icns in Resources */,
+				34898EB819917345003A97B7 /* httpError.txt in Resources */,
 				341C444018A621E4002018E1 /* InfoPlist.strings in Resources */,
 				341509D3192D0C9D003B4CBE /* OPTorDirectory.xib in Resources */,
 				341C444618A621E4002018E1 /* Credits.rtf in Resources */,
@@ -469,6 +478,7 @@
 				344B294C18DE18B900C463AA /* OPCircuit.m in Sources */,
 				34FD48F818A7A9310027B524 /* OPTorNode.m in Sources */,
 				340C6946194C299B00B267B4 /* OPTorDirectoryObject.m in Sources */,
+				34898EB6199030A7003A97B7 /* OPHTTPProxy.m in Sources */,
 				34A1F425192898EE00CF6EEF /* OPBase64.m in Sources */,
 				341BE0F11908572C00725EDA /* OPSHA1.m in Sources */,
 				341BE0F419085B2400725EDA /* OPSHA256.m in Sources */,

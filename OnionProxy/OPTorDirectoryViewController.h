@@ -14,7 +14,7 @@
 
 - (void) setTotalNodesCount:(NSInteger) count;
 - (void) setDirNodesCount:(NSInteger) count;
-- (void) setTorFastNodesCount:(NSInteger) count;
+- (void) setExitNodesCount:(NSInteger) count;
 
 - (void) setPreloadedDescriptorsCount:(NSInteger) count;
 

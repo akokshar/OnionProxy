@@ -96,14 +96,23 @@
     
     if (node == NULL) {
         node = [[OPTorNode alloc] initWithParams:nodeParams];
-        @synchronized(self) {
-            [torNodes setObject:node forKey:descrDigestData];
+
+        if (node.isRunning) {
+            @synchronized(self) {
+                [torNodes setObject:node forKey:descrDigestData];
+            }
+
+            [self.delegate consensusEvent:OPConsensusEventNodeAdded forNodeWithKey:descrDigestData];
+
+            [node release];
         }
 
-        [self.delegate consensusEvent:OPConsensusEventNodeAdded forNode:node];
-
-        [node release];
     }
+    else {
+        // node with same descriptor is already loaded. nothing to do.
+    }
+
+    //TODO: delete obsolete nodes.
 }
 
 - (BOOL) processV3ConsensusDocument:(NSString *)consensusStr {

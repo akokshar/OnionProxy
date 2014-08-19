@@ -13,6 +13,9 @@
 
 @class OPConnection;
 
+extern NSUInteger const OPCellSizeMax;
+extern NSUInteger const OPCellPayloadLen;
+
 typedef enum {
     OPConnectionProtocolVersionUnknown = 0x0000,
     OPConnectionProtocolVersionV1 = 0x0001,

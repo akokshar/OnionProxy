@@ -14,13 +14,15 @@
 @class OPConsensus;
 
 typedef enum {
+    /// sent after node was added
     OPConsensusEventNodeAdded,
-    OPConsensusEventNodeDeleted
+    /// sent just before deleting node
+    OPConsensusEventNodeWillDelete
 } OPConsensusNodeEvent;
 
 @protocol OPConsensusDelegate <NSObject>
 - (void) onConsensusUpdatedEvent;
-- (void) consensusEvent:(OPConsensusNodeEvent)event forNode:(OPTorNode *)node;
+- (void) consensusEvent:(OPConsensusNodeEvent)event forNodeWithKey:(id)nodeKey;
 @end
 
 @interface OPConsensus : OPTorDirectoryObject {

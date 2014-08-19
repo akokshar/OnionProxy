@@ -12,9 +12,14 @@
 
 NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 
-@interface OPProtocol() <NSURLConnectionDataDelegate, OPHTTPStreamDelegate> {
+NSString * const kOPDirectoryProtocolContentEncodingKey = @"Content-Encoding";
+NSString * const kOPDirectoryProtocolAcceptEncodingKey = @"Accept-Encoding";
 
+@interface OPProtocol() <NSURLConnectionDataDelegate, OPStreamDelegate> {
 }
+
+@property (atomic) BOOL isResponseSent;
+@property (assign, setter=setHttpResponse:, getter=getHttpResponse) CFHTTPMessageRef httpResponse;
 
 @property (retain) NSTimer *resourceTimeoutTimer;
 @property (retain) NSURLConnection *connection;
@@ -32,6 +37,23 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 @end
 
 @implementation OPProtocol
+
+@synthesize httpResponse = _httpResponse;
+
+- (void) setHttpResponse:(CFHTTPMessageRef)newHttpResponse {
+    @synchronized(self) {
+        if (_httpResponse) {
+            CFRelease(_httpResponse);
+        }
+        _httpResponse = newHttpResponse;
+    }
+}
+
+- (CFHTTPMessageRef) getHttpResponse {
+    @synchronized(self) {
+        return _httpResponse;
+    }
+}
 
 + (BOOL)canInitWithRequest:(NSURLRequest *)request {
 
@@ -58,19 +80,18 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 }
 
 - (void) startLoading {
-    if ([self.request.URL.scheme hasPrefix:@"http"]) {
+    self.isResponseSent = NO;
+    self.httpResponse = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, NO);
 
-    }
-    else if ([self.request.URL.scheme isEqualToString:@"opdir"]) {
+    if ([self.request.URL.scheme isEqualToString:@"opdir"]) {
         // if tor network available use it. otherwise fallback to direct connection
-        self.torStream = [OPStream streamForClient:self withDirectoryResourceRequest:self.request];
+        self.torStream = [OPStream directoryStreamForClient:self];
         if (self.torStream) {
 //            NSLog(@"===== Circuit is READY ====");
             [self.torStream open];
         }
         else {
 //            NSLog(@"===== Circuit is NOT ready fallback to HTTP ====");
-
             NSMutableURLRequest *httpRequest = [self.request mutableCopy];
             NSString *httpURLStr = [@"http:" stringByAppendingString:self.request.URL.resourceSpecifier];
             httpRequest.URL = [NSURL URLWithString:httpURLStr];
@@ -79,12 +100,18 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
             self.connection = [NSURLConnection connectionWithRequest:httpRequest delegate:self];
             [httpRequest release];
         }
+        [self startResourceTimer];
+    }
+    else if ([self.request.URL.scheme hasPrefix:@"http"]) {
+        // shoud never get here!
+//        NSData *errorTemplate = [[NSData alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"httpError" ofType:@"txt"]];
+//        [self didReceiveData:errorTemplate];
+//        [self didFinishLoading];
+//        [errorTemplate release];
     }
     else {
-        
+        [self.client URLProtocol:self didFailWithError:[NSError errorWithDomain:@"OPProtocolDomain" code:1004 userInfo:NULL]];
     }
-
-    [self startResourceTimer];
 }
 
 - (void) stopLoading {
@@ -95,6 +122,8 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 
     [self.connection cancel];
     self.connection = NULL;
+
+    self.httpResponse = NULL;
 }
 
 - (void) dealloc {
@@ -103,6 +132,8 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 
     [self.torStream close];
     self.torStream = NULL;
+
+    self.httpResponse = NULL;
 
     [super dealloc];
 }
@@ -126,8 +157,14 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 - (void) timerFireMethod:(NSTimer *)timer {
     [self.client URLProtocol:self didFailWithError:[NSError errorWithDomain:NSURLErrorDomain code:1001 userInfo:NULL]];
 
-    [self.connection cancel];
-    self.connection = NULL;
+    if (self.connection) {
+        [self.connection cancel];
+        self.connection = NULL;
+    }
+    if (self.torStream) {
+        [self.torStream close];
+        self.torStream = NULL;
+    }
 
     self.resourceTimeoutTimer = NULL;
 }
@@ -157,18 +194,95 @@ NSString * const kOPProtocolIsDirectoryRequest = @"IsDirectoryRequest";
 #pragma mark -
 #pragma mark OPHTTPStream delegate
 
-- (void) stream:(OPStream *)stream didReceiveResponse:(NSURLResponse *)response {
-    //NSLog(@"streamDidReceiveResponse: %@", response);
-    [self didReceiveResponse:response];
+- (void) streamDidConnect:(OPStream *)stream {
+    //NSLog(@"streamDidConnect");
+    NSURL *directoryResourceUrl = [NSURL URLWithString:[[self.request URL] path]];
+    CFHTTPMessageRef httpRequest = CFHTTPMessageCreateRequest(kCFAllocatorDefault, (CFStringRef)[self.request HTTPMethod], (CFURLRef)directoryResourceUrl, kCFHTTPVersion1_1);
+
+    for (NSString *header in [self.request allHTTPHeaderFields]) {
+        CFHTTPMessageSetHeaderFieldValue(httpRequest, (CFStringRef)header, (CFStringRef)[[self.request allHTTPHeaderFields] objectForKey:header]);
+    }
+    CFHTTPMessageSetHeaderFieldValue(httpRequest, (CFStringRef)kOPDirectoryProtocolAcceptEncodingKey, (CFStringRef)@"deflate, gzip");
+    CFHTTPMessageSetBody(httpRequest, (CFDataRef)[self.request HTTPBody]);
+
+    NSData *httpRequestData = (NSData *) CFHTTPMessageCopySerializedMessage(httpRequest);
+
+    //CFShow(httpRequest);
+
+    [self.torStream sendData:httpRequestData];
+
+    [httpRequestData release];
+    CFRelease(httpRequest);
+}
+
+- (void) streamDidDisconnect:(OPStream *)stream {
+    NSData *bodyData = (NSData *) CFHTTPMessageCopyBody(self.httpResponse);
+    NSString * contentEncoding = (NSString *) CFHTTPMessageCopyHeaderFieldValue(self.httpResponse, (CFStringRef)kOPDirectoryProtocolContentEncodingKey);
+
+    NSData *decompressedData = NULL;
+
+    if (!contentEncoding || [contentEncoding isCaseInsensitiveLike:@"identity"]) {
+        [self didReceiveData:bodyData];
+        [self didFinishLoading];
+    }
+
+    else if ([contentEncoding isCaseInsensitiveLike:@"deflate"]) {
+        SecTransformRef decodeTransform = SecDecodeTransformCreate(kSecZLibEncoding, NULL);
+        if (decodeTransform) {
+            SecTransformSetAttribute(decodeTransform, kSecTransformInputAttributeName, bodyData, NULL);
+            decompressedData = SecTransformExecute(decodeTransform, NULL);
+            CFRelease(decodeTransform);
+        }
+        else {
+            [self.client URLProtocol:self didFailWithError:[NSError errorWithDomain:@"OPProtocolDomain" code:1003 userInfo:NULL]];
+        }
+    }
+
+    else if ([contentEncoding isCaseInsensitiveLike:@"gzip"]) {
+        //TODO: unpack gzip data
+    }
+
+    else {
+        [self.client URLProtocol:self didFailWithError:[NSError errorWithDomain:@"OPProtocolDomain" code:1002 userInfo:NULL]];
+    }
+
+    if (decompressedData) {
+        [self didReceiveData:decompressedData];
+        [self didFinishLoading];
+        [decompressedData release];
+    }
+
+    [contentEncoding release];
+    [bodyData release];
 }
 
 - (void) stream:(OPStream *)stream didReceiveData:(NSData *)data {
     //NSLog(@"streamDidReceiveData: %@", data);
-    [self didReceiveData:data];
-}
 
-- (void) streamDidFinishLoading:(OPStream *)stream {
-    [self didFinishLoading];
+    if ( !CFHTTPMessageAppendBytes(self.httpResponse, [data bytes], [data length]) ) {
+        [self.client URLProtocol:self didFailWithError:[NSError errorWithDomain:@"OPProtocolDomain" code:1001 userInfo:NULL]];
+        return;
+    }
+
+    if ((self.isResponseSent == NO) && (CFHTTPMessageIsHeaderComplete(self.httpResponse))) {
+        NSUInteger statusCode =  CFHTTPMessageGetResponseStatusCode(self.httpResponse);
+        NSString *httpVersion = (NSString *) CFHTTPMessageCopyVersion(self.httpResponse);
+        NSDictionary *headerFields = (NSDictionary *) CFHTTPMessageCopyAllHeaderFields(self.httpResponse);
+        NSMutableDictionary *fixedHeaderFields = [[NSMutableDictionary alloc] initWithDictionary:headerFields];
+        [fixedHeaderFields removeObjectForKey:kOPDirectoryProtocolContentEncodingKey];
+
+        NSHTTPURLResponse *urlResponse = [[NSHTTPURLResponse alloc] initWithURL:[self.request URL] statusCode:statusCode HTTPVersion:httpVersion headerFields:fixedHeaderFields];
+        [httpVersion release];
+        [headerFields release];
+        [fixedHeaderFields release];
+
+        [self didReceiveResponse:urlResponse];
+
+        [urlResponse autorelease];
+        self.isResponseSent = YES;
+    }
+
+    //TODO: check contentLenght. Might be not necessary.
 }
 
 - (void) stream:(OPStream *)connection didFailWithError:(NSError *)error {
