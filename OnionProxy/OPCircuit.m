@@ -76,6 +76,8 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 - (NSMutableDictionary *) getStreamCtxWithStreamId:(OPStreamId)streamId;
 - (void) removeStreamCtxWithStreamId:(OPStreamId)streamId;
 
+- (BOOL) canExtendTo:(OPTorNode *)node;
+- (BOOL) canExtend;
 - (void) extendToNode:(OPTorNode *)node;
 - (void) extend;
 - (void) extendFinishWithResult:(BOOL)result;
@@ -492,7 +494,36 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     }
 }
 
+- (BOOL) canExtend {
+    return self.circuitLength < [OPConfig config].maxCircuitLength;
+}
+
+- (BOOL) canExtendTo:(OPTorNode *)node {
+    if ([self canExtend]) {
+        if (self.circuitLength > 1) {
+            NSMutableDictionary *ctx = [self.nodes objectAtIndex:self.circuitLength - 1];
+            OPTorNode *n = (OPTorNode *)[ctx objectForKey:kOPCircuitNodeKey];
+            if ([n isEqualTo:node]) {
+                return NO;
+            }
+        }
+        if (self.circuitLength > 2) {
+            NSMutableDictionary *ctx = [self.nodes objectAtIndex:self.circuitLength - 2];
+            OPTorNode *n = (OPTorNode *)[ctx objectForKey:kOPCircuitNodeKey];
+            if ([n isEqualTo:node]) {
+                return NO;
+            }
+        }
+        return YES;
+    }
+    return NO;
+}
+
 - (void) extendToNode:(OPTorNode *)node {
+    if (![self canExtendTo:node]) {
+        [self.delegate circuit:self event:OPCircuitEventExtentionNotPossible];
+        return;
+    }
     [self.nodes addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:node, kOPCircuitNodeKey, nil]];
     if (self.circuitLength == 1) {
         [node retainDescriptor];
@@ -676,7 +707,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         self.delegate = delegate;
         streamIdCounter = 1;
         self.streams = [NSMutableDictionary dictionaryWithCapacity:10];
-        self.nodes = [NSMutableArray arrayWithCapacity:[OPConfig config].circuitLength];
+        self.nodes = [NSMutableArray arrayWithCapacity:[OPConfig config].maxCircuitLength];
         self.connection = [OPConnection connectionWithDelegate:self];
         self.isBusy = NO;
         _directoryNodeIndex = -1;

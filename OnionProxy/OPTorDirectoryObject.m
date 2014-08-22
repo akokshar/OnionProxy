@@ -47,7 +47,7 @@
 }
 
 - (BOOL) downloadResource:(NSString *)resource to:(NSString *)file {
-    OPTorNode *cacheServer = [[OPTorDirectory directory] getRandomDirectory];
+    OPTorNode *cacheServer = [OPTorDirectory getRandomDirectory];
 
     if (cacheServer) {
         return [self downloadFromIp:cacheServer.ipStr port:cacheServer.dirPort resource:resource to:file];

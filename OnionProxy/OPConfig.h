@@ -23,7 +23,7 @@
 @property (readonly, getter = getAuthorityCerificateFpURL) NSString *authorityCerificateFpURL;
 @property (readonly, getter = getNetworkStatusURL) NSString *networkStatusURL;
 
-@property (readonly, getter = getCircuitLength) NSUInteger circuitLength;
+@property (readonly, getter = getMaxCircuitLength) NSUInteger maxCircuitLength;
 
 + (OPConfig *) config;
 

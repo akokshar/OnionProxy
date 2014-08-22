@@ -39,6 +39,10 @@
             }
         } break;
 
+        case OPCircuitEventExtentionNotPossible: {
+            [self logMsg:@"Circuit extention failed with 'OPCircuitEventExtentionNotPossible'. Should never happen!!!"];
+        } break;
+
         case OPCircuitEventTruncated: {
 
         } break;

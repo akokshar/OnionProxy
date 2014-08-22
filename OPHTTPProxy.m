@@ -107,6 +107,7 @@
                             if ([hostPort count] == 2) {
                                 port = [[hostPort objectAtIndex:1] shortValue];
                             }
+                            [hostStr release];
 
                             self.torStream = [OPStream streamToPort:port forClient:self];
                             if (self.torStream) {

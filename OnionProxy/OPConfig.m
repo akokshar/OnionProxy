@@ -81,10 +81,10 @@
     return [self.params objectForKey:@"NetworkStatusURL"];
 }
 
-@synthesize circuitLength;
+@synthesize maxCircuitLength;
 
-- (NSUInteger) getCircuitLength {
-    NSNumber *length = [self.params objectForKey:@"CircuitLength"];
+- (NSUInteger) getMaxCircuitLength {
+    NSNumber *length = [self.params objectForKey:@"MaxCircuitLength"];
     if (length) {
         return [length integerValue];
     }

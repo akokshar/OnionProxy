@@ -30,6 +30,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @interface OPTorNode() {
     dispatch_queue_t dispatchQueue;
     dispatch_semaphore_t descriptorUpdateSemaphore;
+    dispatch_semaphore_t descriptorLoadSemaphore;
     NSUInteger updateDelay;
 }
 
@@ -51,13 +52,12 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 @property (retain) OPRSAPublicKey *onionKey;
 // ***
 
-@property (assign) BOOL isUpdating;
 @property (retain) NSDate *lastUpdated;
 
 - (void) initializeWithParams:(NSDictionary *)nodeParams;
 
 - (BOOL) processDescriptorDocument:(NSString *)descriptorStr;
-- (void) loadDescriptor;
+- (BOOL) loadDescriptor;
 
 @end
 
@@ -128,14 +128,12 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 }
 
 - (BOOL) processDescriptorDocument:(NSString *)rawDescriptorStr {
-    if (!rawDescriptorStr) {
+    if (!rawDescriptorStr || [rawDescriptorStr isEqualTo:@""]) {
         return NO;
     }
 
-    dispatch_semaphore_wait(descriptorUpdateSemaphore, DISPATCH_TIME_FOREVER);
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-
     BOOL result = YES;
+    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
     
     NSRegularExpressionOptions optionsRegEx = (NSRegularExpressionDotMatchesLineSeparators | NSRegularExpressionAnchorsMatchLines | NSRegularExpressionUseUnixLineSeparators);
     NSString *descriptorPattern = @"(router .*?"
@@ -196,69 +194,53 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         [self logMsg:@"descriptor pattern missmatch :\n'%@'", rawDescriptorStr];
         result = NO;
     }
-    
-    [pool release];
-    dispatch_semaphore_signal(descriptorUpdateSemaphore);
 
     if (result == YES) {
         //[self retainDescriptor];
         self.descriptorRetainCount = 1;
-        //[self logMsg:@"descriptor is OK!!!. So happy :)"];
     }
     else {
         [self logMsg:@"failed to load descriptor"];
         self.descriptorRetainCount = 0;
     }
 
+    [pool release];
     return result;
 }
 
-- (void) prefetchDescriptor {
+- (BOOL) loadDescriptor {
+    dispatch_semaphore_wait(descriptorLoadSemaphore, DISPATCH_TIME_FOREVER);
+
     if (self.descriptorRetainCount > 0) {
-        [self logMsg:@"prefetchDescriptor: descriptorRetainCount > 0. Skipping..."];
-        return;
+        dispatch_semaphore_signal(descriptorLoadSemaphore);
+        return YES;
     }
 
-    @synchronized(self) {
-        if (self.isUpdating) {
-            [self.delegate node:self event:OPTorNodeDescriptorUpdateInProgressEvent];
-            return;
-        }
-
-        self.isUpdating = YES;
-        updateDelay = 0;
-
-        dispatch_async(dispatchQueue, ^{
-            [self loadDescriptor];
-        });
-        // [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL];
-    }
-}
-
-- (void) loadDescriptor {
     NSData *rawDescriptorData = [self downloadResource:self.resourcePath withCacheFile:self.cacheFilePath];
     NSString *rawDescriptorStr = [[NSString alloc] initWithData:rawDescriptorData encoding:NSUTF8StringEncoding];
-    
-    if ([rawDescriptorStr isNotEqualTo:@""] && [self processDescriptorDocument:rawDescriptorStr]) {
-        [self.delegate node:self event:OPTorNodeDescriptorReadyEvent];
-        self.isUpdating = NO;
+
+    BOOL result = [self processDescriptorDocument:rawDescriptorStr];
+
+    if (!result) {
+        [self clearCashedDescriptor];
     }
-    else {
-        NSUInteger delay = updateDelay;
-        if (updateDelay < 60) {
-            updateDelay += arc4random() % 16;
+
+    [rawDescriptorStr release];
+
+    dispatch_semaphore_signal(descriptorLoadSemaphore);
+    
+    return result;
+}
+
+- (void) prefetchDescriptorAsyncWhenDoneCall:(void (^)(OPTorNode *node))completionHandler {
+    dispatch_async(dispatchQueue, ^{
+        if ([self loadDescriptor]) {
+            completionHandler(self);
         }
         else {
-            updateDelay -= arc4random() % 16;
+            completionHandler(NULL);
         }
-
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatchQueue, ^{
-            [self loadDescriptor];
-        });
-        // [[OPJobDispatcher disparcher] addJobForTarget:self selector:@selector(loadDescriptor) object:NULL delayedFor:delay];
-    }
-    
-    [rawDescriptorStr release];
+    });
 }
 
 - (void) retainDescriptor {
@@ -292,6 +274,10 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     }
     
     return NO;
+}
+
+- (BOOL) isEqualTo:(OPTorNode *)node {
+    return [self.descriptorDigest isEqualTo:node.descriptorDigest];
 }
 
 - (void) initializeWithParams:(NSDictionary *)nodeParams {
@@ -364,7 +350,8 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         
         dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
         descriptorUpdateSemaphore = dispatch_semaphore_create(1);
-        
+        descriptorLoadSemaphore = dispatch_semaphore_create(1);
+
         self.identKey = NULL;
         self.onionKey = NULL;
         
@@ -374,8 +361,6 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
         self.descriptorDigest = NULL;
 
         _descriptorRetainCount = 0;
-        
-        self.isUpdating = NO;
 
         self.exitRanges  = [NSMutableArray array];
         [self initializeWithParams:nodeParams];
@@ -400,6 +385,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     
     dispatch_release(dispatchQueue);
     dispatch_release(descriptorUpdateSemaphore);
+    dispatch_release(descriptorLoadSemaphore);
 
     self.delegate = NULL;
     

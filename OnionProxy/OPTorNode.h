@@ -64,12 +64,15 @@ typedef enum {
 @property (readonly) OPRSAPublicKey *identKey;
 @property (readonly) OPRSAPublicKey *onionKey;
 
-- (void) prefetchDescriptor;
+- (BOOL) isEqualTo:(OPTorNode *)node;
+
+- (void) prefetchDescriptorAsyncWhenDoneCall:(void (^)(OPTorNode *node))completionHandler;
 - (void) retainDescriptor;
 - (void) releaseDescriptor;
 - (void) clearCashedDescriptor;
 
 - (BOOL) canExitToPort:(uint16)port;
+
 
 - (id) initWithParams:(NSDictionary *)nodeParams;
 

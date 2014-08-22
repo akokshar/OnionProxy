@@ -28,6 +28,7 @@ typedef enum {
 
 typedef enum {
     OPCircuitEventExtended,
+    OPCircuitEventExtentionNotPossible,
     OPCircuitEventTruncated,
     OPCircuitEventClosed,
 } OPCircuitEvent;

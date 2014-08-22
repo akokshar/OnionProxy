@@ -103,10 +103,9 @@
             }
 
             [self.delegate consensusEvent:OPConsensusEventNodeAdded forNodeWithKey:descrDigestData];
-
-            [node release];
         }
-
+        
+        [node release];
     }
     else {
         // node with same descriptor is already loaded. nothing to do.

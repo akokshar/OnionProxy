@@ -4,12 +4,12 @@
 <dict>
 	<key>MaxJobsCount</key>
 	<integer>64</integer>
-	<key>CircuitLength</key>
+	<key>MaxCircuitLength</key>
 	<string>8</string>
 	<key>ConsensusFlavour</key>
 	<string>ns</string>
 	<key>CacheDir</key>
-	<string>/Volumes/RamDisk/OnionProxyCache/</string>
+	<string>/Users/0xffff/Downloads/OnionProxyCache/</string>
 	<key>AuthorityCerificateURL</key>
 	<string>/tor/keys/authority.z</string>
 	<key>AuthorityCerificateFpURL</key>

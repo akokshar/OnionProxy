@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6185.11" systemVersion="14A298i" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="6206.8" systemVersion="14A329f" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6185.11"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="6206.8"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -53,8 +53,8 @@
                 <rect key="frame" x="0.0" y="5" width="480" height="270"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <tabView focusRingType="none" drawsBackground="NO" initialItem="En4-xI-QvV" translatesAutoresizingMaskIntoConstraints="NO" id="Sl4-NZ-lsd">
-                        <rect key="frame" x="13" y="10" width="454" height="254"/>
+                    <tabView focusRingType="none" misplaced="YES" drawsBackground="NO" initialItem="En4-xI-QvV" translatesAutoresizingMaskIntoConstraints="NO" id="Sl4-NZ-lsd">
+                        <rect key="frame" x="13" y="6" width="454" height="254"/>
                         <font key="font" metaFont="system"/>
                         <tabViewItems>
                             <tabViewItem label="Control" identifier="" id="En4-xI-QvV">
@@ -92,7 +92,7 @@
                                             </connections>
                                         </button>
                                         <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="hAO-gW-0eL">
-                                            <rect key="frame" x="17" y="145" width="105" height="25"/>
+                                            <rect key="frame" x="132" y="180" width="105" height="25"/>
                                             <buttonCell key="cell" type="square" title="Fetch" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="LQb-P1-r4J">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
@@ -102,7 +102,7 @@
                                             </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Uy3-4Z-Tid">
-                                            <rect key="frame" x="17" y="110" width="105" height="25"/>
+                                            <rect key="frame" x="250" y="180" width="105" height="25"/>
                                             <buttonCell key="cell" type="square" title="Close circuit" bezelStyle="shadowlessSquare" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="s2m-99-3dD">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
@@ -112,7 +112,7 @@
                                             </connections>
                                         </button>
                                         <button verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="30f-Nd-a3j">
-                                            <rect key="frame" x="341" y="10" width="66" height="32"/>
+                                            <rect key="frame" x="365" y="177" width="66" height="32"/>
                                             <buttonCell key="cell" type="push" title="Quit" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="Jsk-eU-BOk">
                                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                                 <font key="font" metaFont="system"/>
@@ -121,33 +121,36 @@
                                                 <action selector="terminate:" target="-3" id="2TL-FW-pWC"/>
                                             </connections>
                                         </button>
-                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Vok-66-wUM">
-                                            <rect key="frame" x="150" y="180" width="105" height="25"/>
-                                            <buttonCell key="cell" type="square" title="Create Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="inn-mt-eYd">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
-                                            <connections>
-                                                <action selector="openStream:" target="494" id="Pg9-xb-CCf"/>
-                                            </connections>
-                                        </button>
-                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="uPM-fs-sPE">
-                                            <rect key="frame" x="150" y="145" width="105" height="25"/>
-                                            <buttonCell key="cell" type="square" title="Open Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="KZG-v5-neH">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
-                                        </button>
-                                        <button fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6ZW-7l-SU1">
-                                            <rect key="frame" x="150" y="110" width="105" height="25"/>
-                                            <buttonCell key="cell" type="square" title="Close Stream" bezelStyle="shadowlessSquare" imagePosition="overlaps" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="2Cg-9h-wkS">
-                                                <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                                                <font key="font" metaFont="system"/>
-                                            </buttonCell>
-                                            <connections>
-                                                <action selector="closeStream:" target="494" id="hqq-Qy-zIX"/>
-                                            </connections>
-                                        </button>
+                                        <box autoresizesSubviews="NO" fixedFrame="YES" title="Circuit length" borderType="line" translatesAutoresizingMaskIntoConstraints="NO" id="kKt-Cj-k0r">
+                                            <rect key="frame" x="14" y="102" width="414" height="62"/>
+                                            <view key="contentView">
+                                                <rect key="frame" x="1" y="1" width="412" height="46"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <subviews>
+                                                    <slider verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="LXh-ey-mCh">
+                                                        <rect key="frame" x="16" y="11" width="380" height="27"/>
+                                                        <sliderCell key="cell" state="on" alignment="left" minValue="1" maxValue="8" doubleValue="3" tickMarkPosition="below" numberOfTickMarks="8" allowsTickMarkValuesOnly="YES" sliderType="linear" id="NGc-ZP-rBp"/>
+                                                    </slider>
+                                                </subviews>
+                                            </view>
+                                            <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
+                                            <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                        </box>
+                                        <box autoresizesSubviews="NO" fixedFrame="YES" title="Destroy socket after" borderType="line" translatesAutoresizingMaskIntoConstraints="NO" id="sAR-X9-l7K">
+                                            <rect key="frame" x="14" y="36" width="414" height="62"/>
+                                            <view key="contentView">
+                                                <rect key="frame" x="1" y="1" width="412" height="46"/>
+                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                <subviews>
+                                                    <slider verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="19S-SO-qhr">
+                                                        <rect key="frame" x="16" y="11" width="380" height="27"/>
+                                                        <sliderCell key="cell" state="on" alignment="left" minValue="1" maxValue="8" doubleValue="3" tickMarkPosition="below" numberOfTickMarks="8" allowsTickMarkValuesOnly="YES" sliderType="linear" id="Nqx-cS-kFE"/>
+                                                    </slider>
+                                                </subviews>
+                                            </view>
+                                            <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
+                                            <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
+                                        </box>
                                     </subviews>
                                 </view>
                             </tabViewItem>
