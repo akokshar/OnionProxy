@@ -14,7 +14,7 @@
 - (void) onNetworkReady;
 @end
 
-@interface OPTorDirectory : OPObject <OPConsensusDelegate, OPTorNodeDelegate> {
+@interface OPTorDirectory : OPObject <OPConsensusDelegate> {
     
 }
 

@@ -24,21 +24,9 @@ extern NSString * const nodePolicyStrKey;
 
 @class OPTorNode;
 
-typedef enum {
-    OPTorNodeDescriptorReadyEvent,
-    OPTorNodeDescriptorUpdateInProgressEvent,
-    OPTorNodeDescriptorUpdateFailedEvent
-} OPTorNodeEvent;
-
-@protocol OPTorNodeDelegate <NSObject>
-- (void) node:(OPTorNode *)node event:(OPTorNodeEvent)event;
-@end
-
 @interface OPTorNode : OPTorDirectoryObject {
     
 }
-
-@property (assign) id<OPTorNodeDelegate>delegate;
 
 @property (readonly) BOOL isValid;
 @property (readonly) BOOL isNamed;

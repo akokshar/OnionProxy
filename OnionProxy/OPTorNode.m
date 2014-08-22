@@ -311,7 +311,7 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     NSString *dirPort = [nodeParams objectForKey:nodeDirPortStrKey];
     _dirPort = [dirPort intValue];
 
-    // reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
+    //Example: reject 25,119,135-139,445,563,1214,4661-4666,6346-6429,6699,6881-6999
     NSString *policyConfigutationStr = [[nodeParams objectForKey:nodePolicyStrKey] uppercaseString];
     NSString *exitRangesStr = NULL;
     if ([policyConfigutationStr hasPrefix:@"ACCEPT"]) {
@@ -346,8 +346,6 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
 - (id) initWithParams:(NSDictionary *)nodeParams {
     self = [super init];
     if (self) {
-        self.delegate = NULL;
-        
         dispatchQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
         descriptorUpdateSemaphore = dispatch_semaphore_create(1);
         descriptorLoadSemaphore = dispatch_semaphore_create(1);
@@ -386,8 +384,6 @@ NSString * const nodePolicyStrKey = @"PolicyStr";
     dispatch_release(dispatchQueue);
     dispatch_release(descriptorUpdateSemaphore);
     dispatch_release(descriptorLoadSemaphore);
-
-    self.delegate = NULL;
     
     [super dealloc];
 }

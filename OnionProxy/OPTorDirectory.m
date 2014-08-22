@@ -149,7 +149,6 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         for (NSUInteger i = readyRouters.count; i < torDescriptorsReadyMinimum; i++) {
             NSUInteger r = arc4random() % self.torNodesKeys.count;
             OPTorNode *node = [consensus.nodes objectForKey:[self.torNodesKeys objectAtIndex:r]];
-            node.delegate = self;
             [node prefetchDescriptorAsyncWhenDoneCall:completionHandler];
         }
     }
@@ -158,7 +157,6 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
         for (NSUInteger i = readyCacheCount; i < torDescriptorsReadyMinimum; i++) {
             NSUInteger r = arc4random() % self.v2DirNodesKeys.count;
             OPTorNode *node = [consensus.nodes objectForKey:[self.v2DirNodesKeys objectAtIndex:r]];
-            node.delegate = self;
             [node prefetchDescriptorAsyncWhenDoneCall:completionHandler];
         }
     }
@@ -185,27 +183,7 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 
     NSUInteger r = arc4random() % self.v2DirNodesKeys.count;
     OPTorNode *node = [consensus.nodes objectForKey:[self.torNodesKeys objectAtIndex:r]];
-    node.delegate = self;
     [node prefetchDescriptorAsyncWhenDoneCall:completionHandler];
-}
-
-- (void) node:(OPTorNode *)node event:(OPTorNodeEvent)event {
-    switch (event) {
-        case OPTorNodeDescriptorReadyEvent: {
-            @synchronized(readyRouters) {
-                [readyRouters addObject:node];
-            }
-            dispatch_semaphore_signal(readyRouterSemaphore);
-            if (node.isV2Dir) {
-                readyCacheCount++;
-                dispatch_semaphore_signal(readyCacheSemaphore);
-            }
-            [viewController setPreloadedDescriptorsCount:[readyRouters count]];
-        } break;
-            
-        default:
-            break;
-    }
 }
 
 - (void) shuffleArray:(NSMutableArray *)array {
