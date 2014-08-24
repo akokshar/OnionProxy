@@ -10,10 +10,12 @@
 #import "OPTorDirectoryViewController.h"
 #import "OPConsensus.h"
 
-NSUInteger const torDescriptorsReadyMinimum = 8;
+NSUInteger const torDescriptorsReadyMinimum = 16;
+NSUInteger const torDescriptorsReadyExitMinimum = 4;
 
-NSString * const OPPortToExitNodesKeysKey = @"PortToExitNodesKeys";
-NSString * const OPPortToReadyExitNodesKey = @"PortToReadyExitNodesKey";
+NSString * const OPExitNodesKeysKey = @"ExitNodesKeys";
+NSString * const OPReadyExitNodesKey = @"ReadyExitNodesKey";
+NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
 
 @interface OPTorDirectory() {
     dispatch_queue_t torNodeRequestQueue;
@@ -36,6 +38,11 @@ NSString * const OPPortToReadyExitNodesKey = @"PortToReadyExitNodesKey";
 - (void) directoryInit;
 
 - (OPTorNode *) getRandomDirectory;
+
+- (NSDictionary *) getExitNodesCtxForPort:(uint16)port;
+- (void) resetExitNodesKeysForPort:(uint16)port;
+- (void) removeExitNodesCtxForPort:(uint16)port;
+
 - (void) prefetchDescriptors;
 
 - (void) shuffleArray:(NSMutableArray *)array;
@@ -67,27 +74,97 @@ NSString * const OPPortToReadyExitNodesKey = @"PortToReadyExitNodesKey";
     return [OPTorDirectory directory].getRandomDirectory;
 }
 
-- (void) getRandomExitNodeToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler {
-    NSDictionary *ctx = [portToExitNodes objectForKey:[NSNumber numberWithShort:port]];
-    if (ctx == NULL) {
-        NSMutableArray *portExitNodesKeys = [NSMutableArray array];
+- (NSDictionary *) getExitNodesCtxForPort:(uint16)port {
+    NSDictionary *ctx = NULL;
+    NSMutableArray *portExitNodesKeys = NULL;
+    NSMutableArray *portReadyExitNodes = NULL;
 
-        [self.exitNodesKeys enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-            OPTorNode *node = [consensus.nodes objectForKey:obj];
-            if ([node canExitToPort:port]) {
-                
-            }
-        }];
+    @synchronized(portToExitNodes) {
+        ctx = [portToExitNodes objectForKey:[NSNumber numberWithShort:port]];
+        if (ctx == NULL) {
+            portExitNodesKeys = [NSMutableArray array];
+            portReadyExitNodes = [NSMutableArray array];
+            dispatch_semaphore_t waitExit = dispatch_semaphore_create(0);
 
-        NSMutableArray *portReadyExitNodes = [NSMutableArray array];
-        ctx = [NSDictionary dictionaryWithObjectsAndKeys:
-               portExitNodesKeys, OPPortToExitNodesKeysKey,
-               portReadyExitNodes, OPPortToReadyExitNodesKey,
-               nil];
-        @synchronized(portToExitNodes) {
+            ctx = [NSDictionary dictionaryWithObjectsAndKeys:
+                   portExitNodesKeys, OPExitNodesKeysKey,
+                   portReadyExitNodes, OPReadyExitNodesKey,
+                   [NSValue valueWithPointer:&waitExit], OPWaitExitNodeSemaphoreKey,
+                   nil];
+
             [portToExitNodes setObject:ctx forKey:[NSNumber numberWithShort:port]];
+
+            [self resetExitNodesKeysForPort:port];
         }
     }
+
+    return ctx;
+}
+
+- (void) resetExitNodesKeysForPort:(uint16)port {
+    NSDictionary *ctx = [portToExitNodes objectForKey:[NSNumber numberWithShort:port]];
+    if (ctx) {
+        NSMutableArray *portExitNodesKeys = [ctx objectForKey:OPExitNodesKeysKey];
+        @synchronized(portExitNodesKeys) {
+            [portExitNodesKeys removeAllObjects];
+            [self.exitNodesKeys enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                OPTorNode *node = [consensus.nodes objectForKey:obj];
+                if ([node canExitToPort:port]) {
+                    [portExitNodesKeys addObject:obj];
+                }
+            }];
+        }
+    }
+}
+
+- (void) removeExitNodesCtxForPort:(uint16)port {
+    @synchronized(portToExitNodes) {
+        NSDictionary *ctx = [portToExitNodes objectForKey:[NSNumber numberWithShort:port]];
+        if (ctx) {
+            dispatch_semaphore_t *waitExitPtr = [(NSValue *)[ctx objectForKey:OPWaitExitNodeSemaphoreKey] pointerValue];
+            dispatch_release(*waitExitPtr);
+            [portToExitNodes removeObjectForKey:[NSNumber numberWithShort:port]];
+        }
+    }
+}
+
+- (void) getRandomExitNodeToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler {
+    NSDictionary *ctx = [self getExitNodesCtxForPort:port];
+    NSMutableArray *portExitNodesKeys = [ctx objectForKey:OPExitNodesKeysKey];
+    if ([portExitNodesKeys count] == 0) {
+        completionHandler(NULL);
+        return;
+    }
+    NSMutableArray *portReadyExitNodes = [ctx objectForKey:OPReadyExitNodesKey];
+    dispatch_semaphore_t *waitExitPtr = [(NSValue *)[ctx objectForKey:OPWaitExitNodeSemaphoreKey] pointerValue];
+
+    for (NSUInteger i = [portReadyExitNodes count]; i < torDescriptorsReadyExitMinimum; i++) {
+        NSUInteger r = arc4random() % [portExitNodesKeys count];
+        OPTorNode *node = [consensus.nodes objectForKey:[portExitNodesKeys objectAtIndex:r]];
+        [node prefetchDescriptorAsyncWhenDoneCall:^(OPTorNode *node) {
+            if (node) {
+                @synchronized(portReadyExitNodes) {
+                    [portReadyExitNodes addObject:node];
+                }
+                dispatch_semaphore_signal(*waitExitPtr);
+            }
+        }];
+    }
+
+    OPTorNode *exitNode = NULL;
+
+    dispatch_semaphore_wait(*waitExitPtr, DISPATCH_TIME_FOREVER);
+
+    @synchronized(portReadyExitNodes) {
+        if ([portReadyExitNodes count] > 0) {
+            NSUInteger r = arc4random() % [portReadyExitNodes count];
+            exitNode = [portReadyExitNodes objectAtIndex:r];
+            [portReadyExitNodes removeObjectAtIndex:r];
+        }
+
+    }
+
+    completionHandler(exitNode);
 }
 
 - (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler {
