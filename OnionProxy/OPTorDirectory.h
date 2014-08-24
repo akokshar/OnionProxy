@@ -23,7 +23,7 @@
 
 + (OPTorDirectory *) directory;
 
-- (void) getRandomExitNoteToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler;
+- (void) getRandomExitNodeToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler;
 
 /** 
  * Provide random TOR node with descriptor loaded. Guaranteed not to return NULL node;

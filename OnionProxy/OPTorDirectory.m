@@ -12,6 +12,9 @@
 
 NSUInteger const torDescriptorsReadyMinimum = 8;
 
+NSString * const OPPortToExitNodesKeysKey = @"PortToExitNodesKeys";
+NSString * const OPPortToReadyExitNodesKey = @"PortToReadyExitNodesKey";
+
 @interface OPTorDirectory() {
     dispatch_queue_t torNodeRequestQueue;
 
@@ -20,6 +23,8 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     dispatch_semaphore_t readyRouterSemaphore;
     dispatch_semaphore_t readyCacheSemaphore;
 
+    NSMutableDictionary *portToExitNodes;
+
     OPConsensus *consensus;
     OPTorDirectoryViewController *viewController;
 }
@@ -27,7 +32,6 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
 @property (retain) NSMutableArray *v2DirNodesKeys;
 @property (retain) NSMutableArray *torNodesKeys;
 @property (retain) NSMutableArray *exitNodesKeys;
-@property (retain) NSMutableDictionary *portToExitNodes;
 
 - (void) directoryInit;
 
@@ -49,9 +53,6 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     return NULL;
 }
 
-@synthesize torNodesKeys;
-@synthesize v2DirNodesKeys = _v2DirNodesKeys;
-
 - (OPTorNode *) getRandomDirectory {
     if ([self.v2DirNodesKeys count] == 0) {
         [self logMsg:@"No directory servers known"];
@@ -66,8 +67,27 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     return [OPTorDirectory directory].getRandomDirectory;
 }
 
-- (void) getRandomExitNoteToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler {
-    
+- (void) getRandomExitNodeToPort:(uint16)port async:(void (^)(OPTorNode *node))completionHandler {
+    NSDictionary *ctx = [portToExitNodes objectForKey:[NSNumber numberWithShort:port]];
+    if (ctx == NULL) {
+        NSMutableArray *portExitNodesKeys = [NSMutableArray array];
+
+        [self.exitNodesKeys enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+            OPTorNode *node = [consensus.nodes objectForKey:obj];
+            if ([node canExitToPort:port]) {
+                
+            }
+        }];
+
+        NSMutableArray *portReadyExitNodes = [NSMutableArray array];
+        ctx = [NSDictionary dictionaryWithObjectsAndKeys:
+               portExitNodesKeys, OPPortToExitNodesKeysKey,
+               portReadyExitNodes, OPPortToReadyExitNodesKey,
+               nil];
+        @synchronized(portToExitNodes) {
+            [portToExitNodes setObject:ctx forKey:[NSNumber numberWithShort:port]];
+        }
+    }
 }
 
 - (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler {
@@ -254,8 +274,8 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     [viewController setExitNodesCount:self.exitNodesKeys.count];
     [viewController setDirNodesCount:self.v2DirNodesKeys.count];
 
-    @synchronized(self.portToExitNodes) {
-        [self.portToExitNodes removeAllObjects];
+    @synchronized(portToExitNodes) {
+        [portToExitNodes removeAllObjects];
     }
 
     [self logMsg:@"Directory updated."];
@@ -273,7 +293,8 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     self.v2DirNodesKeys = [NSMutableArray array];
     self.torNodesKeys = [NSMutableArray array];
     self.exitNodesKeys = [NSMutableArray array];
-    self.portToExitNodes = [NSMutableDictionary dictionary];
+
+    portToExitNodes = [[NSMutableDictionary alloc] init];
 
     torNodeRequestQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_CONCURRENT);
 
@@ -291,11 +312,12 @@ NSUInteger const torDescriptorsReadyMinimum = 8;
     [readyRouters release];
     dispatch_release(readyRouterSemaphore);
     dispatch_release(readyCacheSemaphore);
+
+    [portToExitNodes release];
     
     self.v2DirNodesKeys = NULL;
     self.torNodesKeys = NULL;
     self.exitNodesKeys = NULL;
-    self.portToExitNodes = NULL;
 
     [super dealloc];
 }
