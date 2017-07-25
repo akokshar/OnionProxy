@@ -15,6 +15,9 @@
 
 }
 
+@property (retain) NSMutableSet *circuits;
+@property (retain) NSMutableSet *blanks;
+
 @property (retain) OPCircuit *c;
 @property (retain) OPStream *s;
 
@@ -60,7 +63,23 @@
     return NULL;
 }
 
-- (OPStream *) createHTTPStreamForDirectoryServiceWithRequest:(NSURLRequest *)request {
+- (OPCircuit *) circuitWithExitToPort:(uint16)port {
+    NSSet *exitCircuitsSet = [self.circuits objectsPassingTest:^BOOL(id obj, BOOL *stop) {
+        OPCircuit *circuit = (OPCircuit *) obj;
+        return [circuit canExitToPort:port];
+    }];
+    
+    if ([exitCircuitsSet count] > 0) {
+        NSArray *exitCircuits = [exitCircuitsSet allObjects];
+        NSInteger exitIndex = arc4random() / [exitCircuits count];
+        return [exitCircuits objectAtIndex:exitIndex];
+    }
+    
+    [self logMsg:@"No circuits with exit to port '%i' available. Trying to create one.", port];
+    
+    [[OPTorDirectory directory] getRandomExitNodeToPort:port async:^(OPTorNode *node) {
+        
+    }];
     
     return NULL;
 }
@@ -90,6 +109,23 @@
 //    [self.s  close];
 //    [self logMsg:@"stream closed. retain count %lu", (unsigned long)self.s .retainCount];
 //    self.s  = NULL;
+}
+
+- (id) init {
+    
+    self = [super init];
+    if (self) {
+        self.circuits = [NSMutableSet set];
+        self.blanks = [NSMutableSet set];
+    }
+    return self;
+}
+
+- (void) dealloc {
+    self.circuits = NULL;
+    self.blanks = NULL;
+    
+    [super dealloc];
 }
 
 + (OPTorNetwork *) network {

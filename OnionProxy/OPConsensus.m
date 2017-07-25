@@ -193,6 +193,7 @@
                     }
                 }
                 isSignatureValid = (validSignaturesCount >= totalSignaturesCount / 3 * 2);
+                //isSignatureValid = YES;
                 
                 [self logMsg:@"Consensus signatures: %li. Verified: %lu.", totalSignaturesCount, validSignaturesCount];
             }
@@ -351,6 +352,7 @@
 - (id) init {
     self = [super init];
     if (self) {
+        self.name = @"Consensus";
         [self logMsg:@"INIT CONSENSUS"];
         torNodes = [[NSMutableDictionary alloc] initWithCapacity:5500];
         //    jobDispatcher = [[OPJobDispatcher alloc] initWithMaxJobsCount:[OPConfig config].consensusJobsCount];

@@ -16,33 +16,31 @@
     
 }
 
-@property (retain) NSString *name;
-
 @end
 
 @implementation OPObject
 
+@synthesize options = _options;
+
+- (NSMutableDictionary *) getOptions {
+    @synchronized(self) {
+        if (_options == NULL) {
+            _options = [NSMutableDictionary dictionary];
+        }
+    }
+    return _options;
+}
+
 - (void) logMsg:(NSString *)format, ... {
-    static int i = 0;
     va_list args;
     va_start(args, format);
     NSString *message = [[NSString alloc] initWithFormat:format arguments:args];
-    printf("[%i] %s\n", i++, (const char *)[message UTF8String]);
+    printf("[%s] %s\n", (const char *)[self.name UTF8String], (const char *)[message UTF8String]);
     [message release];
     va_end(args);
 }
 
 - (NSData *) decodeBase64Str:(NSString *)str {
-// Method hangs when called form multiple threads. WTF? @synchronized is here for that reason (and, just in case, in above methods).
-//    @synchronized(self) {
-//        SecTransformRef base64DecodeTransform = SecDecodeTransformCreate(kSecBase64Encoding, NULL);
-//        SecTransformSetAttribute(base64DecodeTransform, kSecTransformInputAttributeName, [str dataUsingEncoding:NSUTF8StringEncoding], NULL);
-//        NSData *data = SecTransformExecute(base64DecodeTransform, NULL);
-//        CFRelease(base64DecodeTransform);
-//        return [data autorelease];
-//    
-//    // [NSData initWithBase64EncodedString] method is much faster then SecDecodeTransform. Also sync is not required
-//    }
     return [[[NSData alloc] initWithBase64EncodedString:str options:NSDataBase64DecodingIgnoreUnknownCharacters] autorelease];
 }
 
@@ -56,5 +54,21 @@
     return [hexString autorelease];
 }
 
+- (id) init {
+    self = [super init];
+    if (self) {
+        self.name = @"OPObject";
+    }
+    return self;
+}
+
+- (void) dealloc {
+    if (_options) {
+        [_options release];
+    }
+    self.name = NULL;
+    
+    [super dealloc];
+}
 
 @end

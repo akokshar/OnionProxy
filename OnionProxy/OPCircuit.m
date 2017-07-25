@@ -16,21 +16,21 @@
 #import "OPSHA1.h"
 
 typedef enum {
-    OPRelayCommanBegin = 1,     // RELAY_BEGIN     [forward]
-    OPRelayCommanRelay = 2,     // RELAY_DATA      [forward or backward]
-    OPRelayCommanEnd = 3,       // RELAY_END       [forward or backward]
-    OPRelayCommanConnected = 4, // RELAY_CONNECTED [backward]
-    OPRelayCommanSendMe = 5,    // RELAY_SENDME    [forward or backward] [sometimes control]
-    OPRelayCommanExtend = 6,    // RELAY_EXTEND    [forward]             [control]
-    OPRelayCommanExtended = 7,  // RELAY_EXTENDED  [backward]            [control]
-    OPRelayCommanTruncate = 8,  // RELAY_TRUNCATE  [forward]             [control]
-    OPRelayCommanTruncated = 9, // RELAY_TRUNCATED [backward]            [control]
-    OPRelayCommanDrop = 10,     // RELAY_DROP      [forward or backward] [control]
-    OPRelayCommanResolve = 11,  // RELAY_RESOLVE   [forward]
-    OPRelayCommanResolved = 12, // RELAY_RESOLVED  [backward]
-    OPRelayCommanBeginDir = 13, // RELAY_BEGIN_DIR [forward]
-    OPRelayCommanExtend2 = 14,  // RELAY_EXTEND2   [forward]             [control]
-    OPRelayCommanExtended2 = 15 // RELAY_EXTENDED2 [backward]            [control]
+    OPRelayCommandBegin = 1,     // RELAY_BEGIN     [forward]
+    OPRelayCommandRelay = 2,     // RELAY_DATA      [forward or backward]
+    OPRelayCommandEnd = 3,       // RELAY_END       [forward or backward]
+    OPRelayCommandConnected = 4, // RELAY_CONNECTED [backward]
+    OPRelayCommandSendMe = 5,    // RELAY_SENDME    [forward or backward] [sometimes control]
+    OPRelayCommandExtend = 6,    // RELAY_EXTEND    [forward]             [control]
+    OPRelayCommandExtended = 7,  // RELAY_EXTENDED  [backward]            [control]
+    OPRelayCommandTruncate = 8,  // RELAY_TRUNCATE  [forward]             [control]
+    OPRelayCommandTruncated = 9, // RELAY_TRUNCATED [backward]            [control]
+    OPRelayCommandDrop = 10,     // RELAY_DROP      [forward or backward] [control]
+    OPRelayCommandResolve = 11,  // RELAY_RESOLVE   [forward]
+    OPRelayCommandResolved = 12, // RELAY_RESOLVED  [backward]
+    OPRelayCommandBeginDir = 13, // RELAY_BEGIN_DIR [forward]
+    OPRelayCommandExtend2 = 14,  // RELAY_EXTEND2   [forward]             [control]
+    OPRelayCommandExtended2 = 15 // RELAY_EXTENDED2 [backward]            [control]
     //32..40 -- Used for hidden services; see rend-spec.txt.
 } OPRelayCommand;
 
@@ -155,6 +155,15 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 
 - (BOOL) getIsDirectoryServiceAvailable {
     return self.directoryNodeIndex >= 0;
+}
+
+- (BOOL) canExitToPort:(uint16)port {
+    NSMutableDictionary *lastNodeCtx = [self.nodes lastObject];
+    OPTorNode *node = [lastNodeCtx objectForKey:kOPCircuitNodeKey];
+    if (node) {
+        return [node canExitToPort:port];
+    }
+    return NO;
 }
 
 - (NSData *) handshakeRequestData {
@@ -316,7 +325,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         [key inplaceEncryptData:cellData];
     }
     
-    if (command == OPRelayCommanExtend) {
+    if (command == OPRelayCommandExtend) {
         // [Starting with Tor 0.2.3.11-alpha, future version of Tor, relays should
         // reject any EXTEND cell not received in a RELAY_EARLY cell.]
         // TODO: check if version is greater or equal to mentioned above
@@ -331,30 +340,30 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
 
 - (void) processCommand:(OPRelayCommand)command fromNode:(NSUInteger)nodeIndex forStream:(uint16_t)streamId withData:(NSData *)data {
     switch (command) {
-        case OPRelayCommanExtended: {
+        case OPRelayCommandExtended: {
             [self extendFinishWithResult:[self handshakeFinishWithResponseData:data]];
         } break;
 
-        case OPRelayCommanConnected: {
+        case OPRelayCommandConnected: {
             NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
             [streamCtx setObject:[NSNumber numberWithBool:YES] forKey:kOPStreamIsConnectedKey];
             id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
             [delegate streamOpened];
         } break;
 
-        case OPRelayCommanEnd: {
+        case OPRelayCommandEnd: {
             NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
             [streamCtx setObject:[NSNumber numberWithBool:NO] forKey:kOPStreamIsConnectedKey];
             [self closeStream:streamId];
         } break;
 
-        case OPRelayCommanRelay: {
+        case OPRelayCommandRelay: {
             NSMutableDictionary *streamCtx = [self getStreamCtxWithStreamId:streamId];
             id<OPCircuitStreamDelegate> delegate = [streamCtx objectForKey:kOPStreamDelegateKey];
             [delegate streamDidReceiveData:data];
         } break;
 
-        case OPRelayCommanTruncated: {
+        case OPRelayCommandTruncated: {
             [self.delegate circuit:self event:OPCircuitEventTruncated];
             while (self.nodes.count > needLength) {
                 [self.nodes removeLastObject];
@@ -544,7 +553,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         [extendData appendData:handshake];
         [extendData appendData:identDigest];
 
-        [self relayCommand:OPRelayCommanExtend toNode:self.nodes.count - 2 forStream:0 withData:extendData];
+        [self relayCommand:OPRelayCommandExtend toNode:self.nodes.count - 2 forStream:0 withData:extendData];
     }
 }
 
@@ -583,7 +592,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     }
 
     if (needLength > 0) {
-        [self relayCommand:OPRelayCommanTruncate toNode:needLength - 1 forStream:0 withData:NULL];
+        [self relayCommand:OPRelayCommandTruncate toNode:needLength - 1 forStream:0 withData:NULL];
         return;
     }
 
@@ -605,12 +614,6 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
         OPStreamId streamId = [key integerValue];
         [self closeStream:streamId];
     }
-
-//    [self.streams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-//        NSDictionary *streamCtx = [self.streams objectForKey:key];
-//        id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
-//        [streamDelegate streamClosed];
-//    }];
 
     [self.connection disconnect];
 
@@ -661,7 +664,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     [streamCtx setObject:delegate forKey:kOPStreamDelegateKey];
     [streamCtx setObject:[NSNumber numberWithInteger:self.directoryNodeIndex] forKey:kOPStreamExitNodeIndex];
 
-    [self relayCommand:OPRelayCommanBeginDir toNode:self.directoryNodeIndex forStream:streamId withData:NULL];
+    [self relayCommand:OPRelayCommandBeginDir toNode:self.directoryNodeIndex forStream:streamId withData:NULL];
 
     return streamId;
 }
@@ -675,7 +678,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     NSNumber *isConnected = [streamCtx objectForKey:kOPStreamIsConnectedKey];
     if ([isConnected boolValue] == YES) {
         NSNumber *nodeIndex = [streamCtx objectForKey:kOPStreamExitNodeIndex];
-        [self relayCommand:OPRelayCommanEnd toNode:[nodeIndex integerValue] forStream:streamId withData:NULL];
+        [self relayCommand:OPRelayCommandEnd toNode:[nodeIndex integerValue] forStream:streamId withData:NULL];
     }
 
     id<OPCircuitStreamDelegate> streamDelegate = [streamCtx objectForKey:kOPStreamDelegateKey];
@@ -696,7 +699,7 @@ NSString * const kOPStreamExitNodeIndex = @"ExitNodeIndex";
     }
 
     NSNumber *exitIndex = [streamCtx objectForKey:kOPStreamExitNodeIndex];
-    [self relayCommand:OPRelayCommanRelay toNode:[exitIndex integerValue] forStream:streamId withData:data];
+    [self relayCommand:OPRelayCommandRelay toNode:[exitIndex integerValue] forStream:streamId withData:data];
 }
 
 

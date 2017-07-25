@@ -12,6 +12,9 @@
 @interface OPHTTPProxy() <NSStreamDelegate, OPStreamDelegate> {
     NSThread *proxyThread;
     CFHTTPMessageRef httpRequest;
+
+    NSMutableArray *clientBuffer;
+    NSUInteger clientBytesSent;
 }
 
 @property (atomic) BOOL isRunning;
@@ -28,6 +31,9 @@
 - (void) run;
 - (void) doStop;
 - (void) stop;
+
+- (void) sendToClient:(NSData *)data;
+- (void) sendToNetwork:(NSData *)data;
 
 @end
 
@@ -68,6 +74,8 @@
 
         self.inputStream.delegate = NULL;
         self.outputStream.delegate = NULL;
+
+        self.torStream = NULL;
     }
     [self logMsg:@"proxy thread finished"];
 }
@@ -101,16 +109,20 @@
                     else {
                         CFHTTPMessageAppendBytes(httpRequest, buffer, len);
                         if (CFHTTPMessageIsHeaderComplete(httpRequest) ) {
+
+                            NSData *httpReqDataLog = (NSData *)CFHTTPMessageCopySerializedMessage(httpRequest);
+                            NSString *httpReqStr = [[NSString alloc] initWithData:httpReqDataLog encoding:NSUTF8StringEncoding];
+                            [self logMsg:@"http request %@", httpReqStr];
+                            [httpReqStr release];
+
                             NSString *hostStr = (NSString *)CFHTTPMessageCopyHeaderFieldValue(httpRequest, (CFStringRef)@"Host");
-                            NSArray *hostPort = [hostStr componentsSeparatedByString:@":"];
-                            uint16 port = 80;
-                            if ([hostPort count] == 2) {
-                                port = [[hostPort objectAtIndex:1] shortValue];
-                            }
+                            self.torStream = [OPStream streamToHost:hostStr forClient:self];
                             [hostStr release];
 
-                            self.torStream = [OPStream streamToPort:port forClient:self];
-                            if (self.torStream) {
+                            if (!self.torStream) {
+                                NSString *errMsgFile = [[NSBundle mainBundle] pathForResource:@"proxyErrorNotReady" ofType:@"txt"];
+                                NSData *errData = [NSData dataWithContentsOfFile:errMsgFile];
+                                [self sendToClient:errData];
                                 // reply with error to client
                             }
                             else {
@@ -126,6 +138,25 @@
         } break;
 
         case NSStreamEventHasSpaceAvailable: {
+            if (clientBuffer.count == 0) {
+                clientBytesSent = 0;
+                return;
+            }
+
+            NSData *data = [clientBuffer objectAtIndex:0];
+            if (clientBytesSent == data.length) {
+                @synchronized(clientBuffer) {
+                    [clientBuffer removeObjectAtIndex:0];
+                }
+                clientBytesSent = 0;
+
+                if (clientBuffer.count == 0) {
+                    return;
+                }
+                data = [clientBuffer objectAtIndex:0];
+            }
+
+            clientBytesSent += [self.outputStream write:data.bytes + clientBytesSent maxLength:data.length - clientBytesSent];
 
         } break;
 
@@ -143,6 +174,8 @@
     }
 }
 
+#pragma mark Onion stream delegates
+
 - (void) streamDidConnect:(OPStream *)stream {
 
 }
@@ -152,10 +185,33 @@
 }
 
 - (void) stream:(OPStream *)stream didReceiveData:(NSData *)data {
-
+    [self sendToClient:data];
 }
 
 - (void) stream:(OPStream *)connection didFailWithError:(NSError *)error {
+
+}
+
+#pragma mark -
+
+- (void) sendToClient:(NSData *)data {
+    if (data == NULL || [data length] == 0) {
+        return;
+    }
+
+    @synchronized(clientBuffer) {
+        [clientBuffer addObject:data];
+    }
+
+    if (clientBuffer.count == 1 && clientBytesSent == 0) {
+        if ([self.outputStream hasSpaceAvailable]) {
+            clientBytesSent = [self.outputStream write:data.bytes maxLength:data.length];
+        }
+    }
+
+}
+
+- (void) sendToNetwork:(NSData *)data {
 
 }
 
@@ -163,6 +219,9 @@
     [self logMsg:@"INIT HTTPPROXY"];
     self = [super init];
     if (self) {
+        clientBuffer = [[NSMutableArray alloc] init];
+        clientBytesSent = 0;
+
         self.inputStream = inputStream;
         self.outputStream = oututStream;
 
@@ -183,6 +242,8 @@
 
     self.inputStream = NULL;
     self.outputStream = NULL;
+
+    [clientBuffer release];
 
     self.torStream = NULL;
 

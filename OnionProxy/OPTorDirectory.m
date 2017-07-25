@@ -10,8 +10,8 @@
 #import "OPTorDirectoryViewController.h"
 #import "OPConsensus.h"
 
-NSUInteger const torDescriptorsReadyMinimum = 16;
-NSUInteger const torDescriptorsReadyExitMinimum = 4;
+NSUInteger const torDescriptorsReadyMinimum = 4;
+NSUInteger const torDescriptorsReadyExitMinimum = 2;
 
 NSString * const OPExitNodesKeysKey = @"ExitNodesKeys";
 NSString * const OPReadyExitNodesKey = @"ReadyExitNodesKey";
@@ -39,13 +39,14 @@ NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
 
 - (OPTorNode *) getRandomDirectory;
 
+/**
+ *  Return exitNodes context. create one if not exist yet.
+ */
 - (NSDictionary *) getExitNodesCtxForPort:(uint16)port;
 - (void) resetExitNodesKeysForPort:(uint16)port;
 - (void) removeExitNodesCtxForPort:(uint16)port;
 
 - (void) prefetchDescriptors;
-
-- (void) shuffleArray:(NSMutableArray *)array;
 
 @end
 
@@ -138,9 +139,14 @@ NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
     NSMutableArray *portReadyExitNodes = [ctx objectForKey:OPReadyExitNodesKey];
     dispatch_semaphore_t *waitExitPtr = [(NSValue *)[ctx objectForKey:OPWaitExitNodeSemaphoreKey] pointerValue];
 
-    for (NSUInteger i = [portReadyExitNodes count]; i < torDescriptorsReadyExitMinimum; i++) {
-        NSUInteger r = arc4random() % [portExitNodesKeys count];
-        OPTorNode *node = [consensus.nodes objectForKey:[portExitNodesKeys objectAtIndex:r]];
+    for (NSUInteger i = [portReadyExitNodes count]; ((i < torDescriptorsReadyExitMinimum) && ([portReadyExitNodes count] < torDescriptorsReadyExitMinimum)); i++) {
+        OPTorNode *node = NULL;
+
+        @synchronized(portExitNodesKeys) {
+            NSUInteger r = arc4random() % [portExitNodesKeys count];
+            node = [consensus.nodes objectForKey:[portExitNodesKeys objectAtIndex:r]];
+        }
+
         [node prefetchDescriptorAsyncWhenDoneCall:^(OPTorNode *node) {
             if (node) {
                 @synchronized(portReadyExitNodes) {
@@ -153,18 +159,19 @@ NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
 
     OPTorNode *exitNode = NULL;
 
-    dispatch_semaphore_wait(*waitExitPtr, DISPATCH_TIME_FOREVER);
-
-    @synchronized(portReadyExitNodes) {
-        if ([portReadyExitNodes count] > 0) {
+    if (dispatch_semaphore_wait(*waitExitPtr, dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC)) == 0) {
+        @synchronized(portReadyExitNodes) {
             NSUInteger r = arc4random() % [portReadyExitNodes count];
-            exitNode = [portReadyExitNodes objectAtIndex:r];
+            exitNode = [[portReadyExitNodes objectAtIndex:r] retain];
             [portReadyExitNodes removeObjectAtIndex:r];
         }
-
     }
 
     completionHandler(exitNode);
+    
+    if (exitNode) {
+        [exitNode release];
+    }
 }
 
 - (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler {
@@ -283,19 +290,6 @@ NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
     [node prefetchDescriptorAsyncWhenDoneCall:completionHandler];
 }
 
-- (void) shuffleArray:(NSMutableArray *)array {
-    if (array == NULL || [array count] == 0) {
-        return;
-    }
-
-    @synchronized(array) {
-        for (NSUInteger i = 0; i < [array count] - 1; i++) {
-            NSUInteger j = arc4random() % [array count];
-            [array exchangeObjectAtIndex:i withObjectAtIndex:j];
-        }
-    }
-}
-
 - (void) consensusEvent:(OPConsensusNodeEvent)event forNodeWithKey:(id)nodeKey {
     OPTorNode *node = [consensus.nodes objectForKey:nodeKey];
 
@@ -351,9 +345,7 @@ NSString * const OPWaitExitNodeSemaphoreKey = @"WaitExitNodeSemaphoreKey";
     [viewController setExitNodesCount:self.exitNodesKeys.count];
     [viewController setDirNodesCount:self.v2DirNodesKeys.count];
 
-    @synchronized(portToExitNodes) {
-        [portToExitNodes removeAllObjects];
-    }
+    //TODO: reinit exit keys
 
     [self logMsg:@"Directory updated."];
 

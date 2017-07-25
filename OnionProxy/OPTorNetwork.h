@@ -17,8 +17,7 @@
 + (OPTorNetwork *) network;
 
 - (OPCircuit *) circuitForDirectoryService;
-
-- (OPStream *) createHTTPStreamForDirectoryServiceWithRequest:(NSURLRequest *)request;
+- (OPCircuit *) circuitWithExitToPort:(uint16)port;
 
 - (void) createCircuit;
 - (void) closeCircuit;

@@ -27,7 +27,7 @@
 
 /** 
  * Provide random TOR node with descriptor loaded. Guaranteed not to return NULL node;
- * Caller have to call retainDescriptor on returned object in order to keep descriptor.
+ * Caller have to call retainDescriptor on returned object in order to keep it.
  * Release descriptor with releaseDescriptor when done;
  */
 - (void) getRandomRouterAsync:(void (^)(OPTorNode *node))completionHandler;
@@ -39,7 +39,7 @@
 
 /**
  * Provide random Cache node with descriptor loaded. Guaranteed not to return NULL node;
- * Caller have to call retainDescriptor on returned object in order to keep descriptor.
+ * Caller have to call retainDescriptor on returned object in order to keep it.
  * Release descriptor with releaseDescriptor when done;
  */
 - (void) getRandomCacheAsync:(void (^)(OPTorNode *node))completionHandler;

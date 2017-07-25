@@ -15,12 +15,14 @@ NSString * const kOPHTTPStreamAcceptEncodingKey = @"Accept-Encoding";
 @interface OPStream()
 
 @property (assign) BOOL isClosed;
-@property (assign) BOOL isForDirectoryService;
 @property (retain) OPCircuit *circuit;
 @property (retain) id<OPStreamDelegate> client;
 @property (assign) OPStreamId streamId;
+@property (copy) NSString *host;
 @property (retain) NSString *destIp;
 @property (assign) uint16 destPort;
+
+- (id) initWithCircuit:(OPCircuit *)circuit host:(NSString *)host client:(id<OPStreamDelegate>)client;
 
 @end
 
@@ -36,7 +38,7 @@ NSString * const kOPHTTPStreamAcceptEncodingKey = @"Accept-Encoding";
             [self logMsg:@"Attempt to open stream twice"];
             return;
         }
-        if (self.isForDirectoryService) {
+        if (self.host == NULL) {
             self.streamId = [self.circuit openDirectoryStreamWithDelegate:self];
         }
         else {
@@ -79,28 +81,32 @@ NSString * const kOPHTTPStreamAcceptEncodingKey = @"Accept-Encoding";
     [self.client stream:self didFailWithError:[NSError errorWithDomain:@"OPStreamDomain" code:1001 userInfo:NULL]];
 }
 
-- (id) initDirectoryStreamWithCircuit:(OPCircuit *)circuit client:(id<OPStreamDelegate>)client {
-    [self logMsg:@"INIT STREAM FOR DIRECTORY SERVICE"];
-    self = [super init];
-    if (self) {
-        self.isForDirectoryService = YES;
-        self.isClosed = NO;
-        self.circuit = circuit;
-        self.client = client;
-    }
-    return self;
-}
+//- (id) initDirectoryStreamWithCircuit:(OPCircuit *)circuit client:(id<OPStreamDelegate>)client {
+//    [self logMsg:@"INIT STREAM FOR DIRECTORY SERVICE"];
+//    self = [super init];
+//    if (self) {
+//        self.host = NULL;
+//        self.isClosed = NO;
+//        self.circuit = circuit;
+//        self.client = client;
+//    }
+//    return self;
+//}
 
-- (id) initWithCircuit:(OPCircuit *)circuit destIp:(NSString *)destIp destPort:(uint16)destPort client:(id<OPStreamDelegate>)client {
-    [self logMsg:@"INIT STREAM"];
+- (id) initWithCircuit:(OPCircuit *)circuit host:(NSString *)host client:(id<OPStreamDelegate>)client {
+    if (host) {
+        [self logMsg:@"INIT STREAM TO: '%@'", host];
+    }
+    else {
+        [self logMsg:@"INIT STREAM FOR DIRECTORY SERVICE"];
+    }
+
     self = [super init];
     if (self) {
-        self.isForDirectoryService = NO;
+        self.host = host;
         self.isClosed = NO;
         self.circuit = circuit;
         self.client = client;
-        self.destIp = destIp;
-        self.destPort = destPort;
     }
     return self;
 }
@@ -109,7 +115,7 @@ NSString * const kOPHTTPStreamAcceptEncodingKey = @"Accept-Encoding";
     [self logMsg:@"DEALLOC STREAM"];
     self.client = NULL;
     self.circuit = NULL;
-    self.destIp = NULL;
+    self.host = NULL;
 
     [super dealloc];
 }
@@ -117,15 +123,29 @@ NSString * const kOPHTTPStreamAcceptEncodingKey = @"Accept-Encoding";
 + (OPStream *) directoryStreamForClient:(id<OPStreamDelegate>)client {
     OPCircuit *circuit = [[OPTorNetwork network] circuitForDirectoryService];
     if (circuit) {
-        return [[[OPStream alloc] initDirectoryStreamWithCircuit:circuit client:client] autorelease];
+        return [[[OPStream alloc] initWithCircuit:circuit host:NULL client:client] autorelease];
     }
     return NULL;
 }
 
-+ (OPStream *) streamToPort:(uint16)port forClient:(id<OPStreamDelegate>)client {
-    //TODO: test code. 
-    return [OPStream directoryStreamForClient:client];
-}
++ (OPStream *) streamToHost:(NSString *)host forClient:(id<OPStreamDelegate>)client {
+    if (!host || [host isEqualToString:@""] || !client) {
+        return NULL;
+    }
 
+    NSArray *hostPort = [host componentsSeparatedByString:@":"];
+    uint16 port = 80;
+    if ([hostPort count] == 2) {
+        port = [[hostPort objectAtIndex:1] shortValue];
+    }
+
+    OPCircuit *circuit = [[OPTorNetwork network] circuitWithExitToPort:port];
+
+    if (circuit) {
+        return [[[OPStream alloc] initWithCircuit:circuit host:host client:client] autorelease];
+    }
+
+    return NULL;
+}
 
 @end

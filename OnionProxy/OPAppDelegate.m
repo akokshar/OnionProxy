@@ -32,7 +32,7 @@
 
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem retain];
-    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"icon" ofType:@"icns"]];
+    NSImage *icon = [[NSImage alloc] initWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"Icons" ofType:@"icns"]];
     NSSize s = {[NSStatusBar systemStatusBar].thickness - 4, [NSStatusBar systemStatusBar].thickness - 4};
     [icon setSize:s];
     statusItem.image = icon;

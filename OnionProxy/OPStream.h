@@ -20,14 +20,11 @@
 
 @interface OPStream : OPObject <OPCircuitStreamDelegate>
 
-- (id) initDirectoryStreamWithCircuit:(OPCircuit *)circuit client:(id<OPStreamDelegate>)client;
-- (id) initWithCircuit:(OPCircuit *)circuit destIp:(NSString *)destIp destPort:(uint16)destPort client:(id<OPStreamDelegate>)client;
-
 - (void) open;
 - (void) close;
 - (void) sendData:(NSData *)data;
 
 + (OPStream *) directoryStreamForClient:(id<OPStreamDelegate>)client;
-+ (OPStream *) streamToPort:(uint16)port forClient:(id<OPStreamDelegate>)client;
++ (OPStream *) streamToHost:(NSString *)host forClient:(id<OPStreamDelegate>)client;
 
 @end

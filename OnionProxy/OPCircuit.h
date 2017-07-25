@@ -11,6 +11,8 @@
 
 typedef uint16 OPStreamId;
 
+@class OPCircuit;
+
 typedef enum {
     OPStreamEventConnected,
     OPStreamEventDataReceived,
@@ -23,8 +25,6 @@ typedef enum {
 - (void) streamClosed;
 - (void) streamError;
 @end
-
-@class OPCircuit;
 
 typedef enum {
     OPCircuitEventExtended,
@@ -47,6 +47,8 @@ typedef enum {
 @property (readonly, getter=getIsDirectoryServiceAvailable) BOOL isDirectoryServiceAvailable;
 
 - (id) initWithDelegate:(id<OPCircuitDelegate>)delegate;
+
+- (BOOL) canExitToPort:(uint16)port;
 
 - (void) appendNode:(OPTorNode *)node;
 
